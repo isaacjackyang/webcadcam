@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebCAM-Lite v0.9: Ortho Fixed</title>
+    <style>
+        :root { --bg-color: #1e1e1e; --text-color: #e0e0e0; --accent: #007acc; --panel-bg: #252526; --border: #3e3e42; --canvas-bg: #111; }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg-color); color: var(--text-color); display: flex; height: 100vh; overflow: hidden; user-select: none; }
+        
+        /* Layout */
+        .sidebar { width: 360px; background: var(--panel-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; z-index: 10; }
+        .main-content { flex: 1; display: flex; flex-direction: column; position: relative; min-width: 0; }
+        
+        /* Toolbar */
+        .cad-toolbar { background: #333; padding: 5px 10px; display: flex; gap: 8px; border-bottom: 1px solid var(--border); align-items: center; flex-wrap: wrap;}
+        .toolbar-group { display: flex; gap: 2px; border-right: 1px solid #555; padding-right: 8px; align-items: center;}
+        .toolbar-btn { background: #444; color: #eee; border: 1px solid #555; padding: 5px 10px; cursor: pointer; border-radius: 3px; font-size: 0.85em; display: flex; align-items: center; gap: 5px; transition: 0.1s;}
+        .toolbar-btn:hover { background: #555; }
+        .toolbar-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+        .toolbar-btn.danger { color: #ff6666; border-color: #883333; }
+        
+        .toggle-label { display: flex; align-items: center; font-size: 0.8em; gap: 5px; cursor: pointer; color:#ccc; margin-right:5px;}
+        input[type="checkbox"] { margin: 0; }
+
+        .status-bar { background: #2d2d30; color: #aaa; padding: 2px 10px; font-size: 0.75em; font-family: monospace; display: flex; justify-content: space-between; border-top: 1px solid #333;}
+        .preview-area { flex: 1; background: var(--canvas-bg); position: relative; overflow: hidden; cursor: default; }
+        
+        /* Inputs */
+        .gcode-panel { height: 160px; background: var(--panel-bg); border-top: 1px solid var(--border); padding: 10px; display: flex; flex-direction: column; flex-shrink: 0; }
+        .control-group { margin-bottom: 8px; border-bottom: 1px solid #333; padding-bottom: 8px; }
+        label { display: block; margin-bottom: 2px; font-size: 0.8em; color: #aaa; }
+        input[type="number"], input[type="text"], select, textarea { 
+            width: 100%; box-sizing: border-box; background: #3c3c3c; border: 1px solid #555; color: white; padding: 4px; font-size: 0.9em;
+        }
+        .row { display: flex; gap: 5px; }
+        .col { flex: 1; }
+        .btn { background: var(--accent); color: white; border: none; padding: 8px; cursor: pointer; width: 100%; font-weight: bold;}
+        .btn:active { opacity: 0.8; transform: translateY(1px); }
+        
+        /* Overlay */
+        #overlay-info { position: absolute; top: 10px; left: 10px; pointer-events: none; color: lime; text-shadow: 1px 1px 1px black; font-family: monospace; font-size: 14px; white-space: pre; }
+        #log-display { color: #ffcc00; margin-right: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="control-group" style="padding: 10px; background: #2d2d30;">
+        <label style="color:white; font-weight:bold;">CAD 環境設定</label>
+        <div class="row">
+            <div class="col"><label>網格 (mm)</label><input type="number" id="grid-size" value="10" min="1" onchange="drawCanvas()"></div>
+            <div class="col" style="display:flex; flex-direction:column; justify-content:center; gap:5px;">
+                <label class="toggle-label"><input type="checkbox" id="chk-grid-snap"> 網格鎖點</label>
+                <label class="toggle-label"><input type="checkbox" id="chk-auto-merge" checked> 自動合併線段</label>
+            </div>
+        </div>
+    </div>
+
+    <div style="padding:10px; overflow-y:auto; flex:1;">
+        <div class="control-group">
+            <label style="color:#ffcc00;">1. 速度設定 (Feeds)</label>
+            <div class="row">
+                <div class="col"><label>XY快速 (Rapid)</label><input type="number" id="feed-rapid" value="2000"></div>
+                <div class="col"><label>Z下刀 (Plunge)</label><input type="number" id="feed-plunge" value="300"></div>
+            </div>
+            <div class="row" style="margin-top:5px;">
+                <div class="col"><label>切削 (Cut Feed)</label><input type="number" id="feed-cut" value="800"></div>
+                <div class="col"><label>主軸 (RPM)</label><input type="number" id="tool-rpm" value="12000"></div>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label style="color:#ffcc00;">2. 刀具與策略</label>
+            <div class="row">
+                <div class="col"><label>刀號 (T)</label><input type="number" id="tool-no" value="1"></div>
+                <div class="col"><label>直徑 (D)</label><input type="number" id="tool-dia" value="3.175"></div>
+            </div>
+            <label>偏移方向 (Offset)</label>
+            <select id="offset-dir">
+                <option value="none">無 (On Line) - 雕刻</option>
+                <option value="left" selected>左偏移 (Left/Out) - 外切</option>
+                <option value="right">右偏移 (Right/In) - 內孔</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label style="color:#ffcc00;">3. 高度設定 (Z-Level)</label>
+            <div class="row">
+                <div class="col"><label>安全高 (Safe)</label><input type="number" id="safe-z" value="5.0"></div>
+                <div class="col"><label>切削深 (Deep)</label><input type="number" id="cut-z" value="-1.0"></div>
+            </div>
+        </div>
+        
+        <button class="btn" onclick="generateAndSimulate()">🚀 生成並預覽</button>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="cad-toolbar">
+        <div class="toolbar-group">
+            <button id="btn-select" class="toolbar-btn active" onclick="setMode('SELECT')">👆 選取</button>
+            <button id="btn-line" class="toolbar-btn" onclick="setMode('LINE')">📏 直線</button>
+            <button id="btn-arc" class="toolbar-btn" onclick="setMode('ARC')">↪️ 圓弧</button>
+        </div>
+        <div class="toolbar-group">
+            <label class="toggle-label" title="限制水平垂直 (Hold Shift)"><input type="checkbox" id="chk-ortho"> 正交模式</label>
+        </div>
+        <div class="toolbar-group" style="margin-left:auto;">
+            <button class="toolbar-btn danger" onclick="deleteSelected()">🗑️ 刪除</button>
+            <button class="toolbar-btn" onclick="clearAll()">💥 清空</button>
+            <button class="toolbar-btn" onclick="resetView()">🔍 重置</button>
+        </div>
+    </div>
+
+    <div class="preview-area" id="canvas-container">
+        <canvas id="cad-canvas"></canvas>
+        <div id="overlay-info"></div>
+    </div>
+    
+    <div class="status-bar">
+        <span><span id="log-display">System Ready.</span> <span id="status-mode">Mode: SELECT</span></span>
+        <span id="status-coords">X:0.0 Y:0.0</span>
+    </div>
+
+    <div class="gcode-panel">
+        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+            <span style="font-size:0.9em; font-weight:bold; color:#aaa">G-Code 輸出</span>
+            <button class="btn" style="width:auto; padding:2px 10px;" onclick="downloadGcode()">💾 下載 NC</button>
+        </div>
+        <textarea id="gcode-output" readonly style="font-family:monospace; color:#0f0; background:#000; flex:1; border:none; resize:none;"></textarea>
+    </div>
+</div>
+
+<textarea id="cfg-header" style="display:none;">G21 G90 G17&#10;(Stock: X0 Y0)</textarea>
+<textarea id="cfg-toolchange" style="display:none;">M5&#10;T{tool_no} M6&#10;S{spindle} M3</textarea>
+<textarea id="cfg-footer" style="display:none;">M5&#10;M30</textarea>
+
+<script>
+    // =========================================
+    //  Global Variables
+    // =========================================
+    const canvas = document.getElementById('cad-canvas');
+    const ctx = canvas.getContext('2d');
+    const container = document.getElementById('canvas-container');
+    const overlay = document.getElementById('overlay-info');
+    const logDisplay = document.getElementById('log-display');
+
+    function log(msg) {
+        console.log(msg);
+        logDisplay.innerText = msg;
+        setTimeout(() => { if(logDisplay.innerText === msg) logDisplay.innerText = ""; }, 5000);
+    }
+
+    let view = { scale: 1.0, x: 0, y: 0 };
+    let isPanning = false;
+    let lastMouse = { x: 0, y: 0 };
+
+    let drawnObjects = []; 
+    let toolPaths = []; 
+    
+    let currentMode = 'SELECT'; 
+    let selectedIndex = -1;
+    let drawStep = 0; 
+    let tempPoints = []; 
+    let snapPoint = null;
+    let currentWorldPos = {x:0, y:0};
+    
+    const SNAP_DIST_PX = 10;
+    const MERGE_TOLERANCE = 0.05;
+
+    // =========================================
+    //  Init
+    // =========================================
+    function init() {
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        resetView();
+        
+        canvas.addEventListener('wheel', handleWheel, {passive: false});
+        canvas.addEventListener('mousedown', handleMouseDown);
+        canvas.addEventListener('mousemove', handleMouseMove);
+        canvas.addEventListener('mouseup', handleMouseUp);
+        canvas.addEventListener('contextmenu', (e) => { e.preventDefault(); cancelOperation(); });
+        
+        window.addEventListener('keydown', (e) => {
+            if(e.key === 'Delete') deleteSelected();
+            if(e.key === 'Escape') cancelOperation();
+            if(e.key === 'Shift') document.getElementById('chk-ortho').checked = true;
+        });
+        window.addEventListener('keyup', (e) => {
+             if(e.key === 'Shift') document.getElementById('chk-ortho').checked = false;
+        });
+        log("System v0.9 initialized.");
+    }
+    
+    function resizeCanvas() {
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
+        drawCanvas();
+    }
+
+    // =========================================
+    //  Viewport
+    // =========================================
+    function screenToWorld(sx, sy) {
+        return { x: (sx - view.x) / view.scale, y: (sy - view.y) / view.scale };
+    }
+    
+    function resetView() {
+        view.scale = 1.0; view.x = canvas.width / 2; view.y = canvas.height / 2;
+        drawCanvas();
+        log("View reset.");
+    }
+
+    function handleWheel(e) {
+        e.preventDefault();
+        const zoomIntensity = 0.1;
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        const wx = (mx - view.x) / view.scale;
+        const wy = (my - view.y) / view.scale;
+
+        if (e.deltaY < 0) view.scale *= (1 + zoomIntensity);
+        else view.scale *= (1 - zoomIntensity);
+
+        view.scale = Math.max(0.1, Math.min(view.scale, 50));
+        view.x = mx - wx * view.scale;
+        view.y = my - wy * view.scale;
+        drawCanvas();
+    }
+
+    // =========================================
+    //  Interaction Logic (FIXED MOUSE DOWN)
+    // =========================================
+    function setMode(mode) {
+        currentMode = mode; cancelOperation();
+        document.querySelectorAll('.toolbar-btn').forEach(b => b.classList.remove('active'));
+        if(mode === 'SELECT') document.getElementById('btn-select').classList.add('active');
+        if(mode === 'LINE') document.getElementById('btn-line').classList.add('active');
+        if(mode === 'ARC') document.getElementById('btn-arc').classList.add('active');
+        document.getElementById('status-mode').innerText = "Mode: " + mode;
+        log("Mode: " + mode);
+        drawCanvas();
+    }
+
+    function cancelOperation() {
+        drawStep = 0; tempPoints = []; selectedIndex = -1; drawCanvas(); overlay.innerText = "";
+    }
+
+    function findSnapPoint(target) {
+        const threshold = SNAP_DIST_PX / view.scale;
+        let closest = null; 
+        let minD = threshold;
+
+        if (Math.hypot(target.x, target.y) < minD) return {x:0, y:0};
+        
+        for(let obj of drawnObjects) {
+            if(!obj.points || obj.points.length < 1) continue;
+            let pts = [obj.points[0], obj.points[obj.points.length-1]];
+            for(let p of pts) {
+                let d = Math.hypot(target.x - p.x, target.y - p.y);
+                if (d < minD) { minD = d; closest = {x:p.x, y:p.y}; }
+            }
+        }
+        if (closest) return closest;
+
+        if (document.getElementById('chk-grid-snap').checked) {
+            const gridSize = parseFloat(document.getElementById('grid-size').value) || 10;
+            const gx = Math.round(target.x / gridSize) * gridSize;
+            const gy = Math.round(target.y / gridSize) * gridSize;
+            if (Math.hypot(target.x - gx, target.y - gy) < threshold * 1.5) { 
+                return {x: gx, y: gy};
+            }
+        }
+        return null;
+    }
+
+    function handleMouseDown(e) {
+        if(e.button === 1) { isPanning = true; lastMouse = { x: e.clientX, y: e.clientY }; return; }
+        if(e.button !== 0) return;
+
+        const rect = canvas.getBoundingClientRect();
+        let raw = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
+        
+        // --- ORTHO FIX HERE ---
+        // We must re-calculate ortho constraint for the click, 
+        // because "raw" is fresh from screenToWorld and ignores what mousemove did.
+        if ((document.getElementById('chk-ortho').checked || e.shiftKey) && drawStep > 0 && tempPoints.length > 0) {
+            const base = tempPoints[tempPoints.length - 1];
+            if (Math.abs(raw.x - base.x) > Math.abs(raw.y - base.y)) raw.y = base.y; else raw.x = base.x;
+        }
+        // ----------------------
+
+        const wPos = snapPoint || raw; // Snap takes priority over Ortho/Raw
+
+        if (currentMode === 'SELECT') {
+            selectObjectAt(wPos);
+        } else if (currentMode === 'LINE') {
+            if (drawStep === 0) { tempPoints = [wPos]; drawStep = 1; }
+            else {
+                drawnObjects.push({ type: 'poly', points: [tempPoints[0], wPos] });
+                tempPoints = [wPos]; 
+            }
+        } else if (currentMode === 'ARC') {
+            if (drawStep === 0) { tempPoints = [wPos]; drawStep = 1; }
+            else if (drawStep === 1) { tempPoints.push(wPos); drawStep = 2; }
+            else if (drawStep === 2) {
+                // Finalize arc
+                const arcPts = generateArcPoints(tempPoints[0], tempPoints[1], wPos, false); 
+                if(arcPts) drawnObjects.push({ type: 'poly', points: arcPts });
+                cancelOperation();
+            }
+        }
+        drawCanvas();
+    }
+
+    function handleMouseMove(e) {
+        const rect = canvas.getBoundingClientRect();
+        if (isPanning) {
+            view.x += e.clientX - lastMouse.x; view.y += e.clientY - lastMouse.y;
+            lastMouse = { x: e.clientX, y: e.clientY };
+            drawCanvas(); return;
+        }
+
+        let raw = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
+        
+        // Ortho Logic (Preview)
+        if ((document.getElementById('chk-ortho').checked || e.shiftKey) && drawStep > 0 && tempPoints.length > 0) {
+            const base = tempPoints[tempPoints.length - 1];
+            if (Math.abs(raw.x - base.x) > Math.abs(raw.y - base.y)) raw.y = base.y; else raw.x = base.x;
+        }
+
+        snapPoint = findSnapPoint(raw);
+        currentWorldPos = snapPoint || raw;
+        
+        document.getElementById('status-coords').innerText = `X:${currentWorldPos.x.toFixed(2)} Y:${currentWorldPos.y.toFixed(2)}`;
+        
+        if(currentMode === 'ARC' && drawStep === 2) {
+            const r = calculateRadius(tempPoints[0], tempPoints[1], currentWorldPos);
+            overlay.innerText = `R: ${r ? r.toFixed(2) : 'Inf'}`;
+        } else if (currentMode === 'LINE' && drawStep === 1) {
+            const d = Math.hypot(currentWorldPos.x - tempPoints[0].x, currentWorldPos.y - tempPoints[0].y);
+            overlay.innerText = `L: ${d.toFixed(2)}`;
+        } else { overlay.innerText = ""; }
+
+        drawCanvas();
+    }
+
+    function handleMouseUp(e) { if(e.button === 1) isPanning = false; }
+
+    // =========================================
+    //  CAM Logic
+    // =========================================
+    function mergePolylines(objects) {
+        if (!objects || objects.length === 0) return [];
+        let pool = objects.map(obj => [...obj.points]);
+        let merged = [];
+        let maxIterations = 1000;
+        let loopCount = 0;
+
+        while (pool.length > 0) {
+            loopCount++; if(loopCount > maxIterations) break;
+            let chain = pool.shift(); 
+            let changed = true;
+            while (changed) {
+                changed = false;
+                let head = chain[0], tail = chain[chain.length - 1];
+                for (let i = 0; i < pool.length; i++) {
+                    let seg = pool[i];
+                    if (Math.hypot(tail.x - seg[0].x, tail.y - seg[0].y) < MERGE_TOLERANCE) {
+                        chain = chain.concat(seg.slice(1)); pool.splice(i, 1); changed = true; break;
+                    } else if (Math.hypot(tail.x - seg[seg.length-1].x, tail.y - seg[seg.length-1].y) < MERGE_TOLERANCE) {
+                        chain = chain.concat(seg.slice(0, -1).reverse()); pool.splice(i, 1); changed = true; break;
+                    } else if (Math.hypot(head.x - seg[seg.length-1].x, head.y - seg[seg.length-1].y) < MERGE_TOLERANCE) {
+                        chain = seg.concat(chain.slice(1)); pool.splice(i, 1); changed = true; break;
+                    } else if (Math.hypot(head.x - seg[0].x, head.y - seg[0].y) < MERGE_TOLERANCE) {
+                        chain = seg.slice().reverse().concat(chain.slice(1)); pool.splice(i, 1); changed = true; break;
+                    }
+                }
+            }
+            if(Math.hypot(chain[0].x - chain[chain.length-1].x, chain[0].y - chain[chain.length-1].y) < MERGE_TOLERANCE && chain.length > 2) {
+                chain[chain.length-1] = {x:chain[0].x, y:chain[0].y};
+            }
+            merged.push(chain);
+        }
+        return merged;
+    }
+
+    function calculateOffsetPath(points, dist, side) {
+        if (!points || points.length < 2) return [];
+        let newPath = [];
+        function rot90(v, d) { return d==='left' ? {x:v.y, y:-v.x} : {x:-v.y, y:v.x}; }
+        function normalize(v) { let l = Math.hypot(v.x,v.y); return l==0?{x:0,y:0}:{x:v.x/l, y:v.y/l}; }
+
+        for (let i = 0; i < points.length; i++) {
+            let pP = points[i-1], pC = points[i], pN = points[i+1];
+            let isClosed = (points.length > 2 && points[0].x === points[points.length-1].x && points[0].y === points[points.length-1].y);
+            if (isClosed) { if (i===0) pP = points[points.length-2]; if (i===points.length-1) pN = points[1]; }
+
+            let n1, n2;
+            if (pP) n1 = rot90(normalize({x:pC.x-pP.x, y:pC.y-pP.y}), side);
+            if (pN) n2 = rot90(normalize({x:pN.x-pC.x, y:pN.y-pC.y}), side);
+
+            let ox=0, oy=0;
+            if (!pP && n2) { ox=n2.x*dist; oy=n2.y*dist; } 
+            else if (!pN && n1) { ox=n1.x*dist; oy=n1.y*dist; }
+            else if (n1 && n2) {
+                let tan = {x:n1.x+n2.x, y:n1.y+n2.y};
+                let len = Math.hypot(tan.x, tan.y);
+                if(len<0.001) { ox=n1.x*dist; oy=n1.y*dist; }
+                else {
+                    let dot = (tan.x/len)*n1.x + (tan.y/len)*n1.y;
+                    let ml = dist/dot; 
+                    if(Math.abs(ml) > dist*4) ml = dist*4; 
+                    ox = (tan.x/len)*ml; oy = (tan.y/len)*ml;
+                }
+            }
+            newPath.push({x: pC.x + ox, y: pC.y + oy});
+        }
+        return newPath;
+    }
+
+    function generateAndSimulate() {
+        if(drawnObjects.length === 0) return log("錯誤: 請先繪圖");
+        try {
+            let mergedChains = document.getElementById('chk-auto-merge').checked ? mergePolylines(drawnObjects) : drawnObjects.map(obj => obj.points);
+            toolPaths = [];
+            const dia = parseFloat(document.getElementById('tool-dia').value);
+            const dir = document.getElementById('offset-dir').value;
+            const offset = dia / 2;
+
+            mergedChains.forEach(chain => {
+                if(dir === 'none') toolPaths.push(chain);
+                else {
+                    let res = calculateOffsetPath(chain, offset, dir);
+                    if(res && res.length) toolPaths.push(res);
+                }
+            });
+
+            const fRapid = document.getElementById('feed-rapid').value;
+            const fPlunge = document.getElementById('feed-plunge').value;
+            const fCut = document.getElementById('feed-cut').value;
+            const safeZ = document.getElementById('safe-z').value;
+            const cutZ = document.getElementById('cut-z').value;
+            
+            let txt = document.getElementById('cfg-header').value + '\n';
+            txt += document.getElementById('cfg-toolchange').value
+                .replace(/{tool_no}/g, document.getElementById('tool-no').value)
+                .replace(/{spindle}/g, document.getElementById('tool-rpm').value) + '\n';
+            txt += `(Strategy: ${dir}, D=${dia})\n`;
+
+            toolPaths.forEach((pts, i) => {
+                if(!pts || pts.length < 2) return;
+                txt += `\n(Chain ${i+1})\n`;
+                txt += `G0 Z${safeZ}\n`; 
+                txt += `G1 X${pts[0].x.toFixed(3)} Y${pts[0].y.toFixed(3)} F${fRapid}\n`;
+                txt += `G1 Z${cutZ} F${fPlunge}\n`;
+                for(let k=1; k<pts.length; k++) txt += `G1 X${pts[k].x.toFixed(3)} Y${pts[k].y.toFixed(3)} F${fCut}\n`;
+                txt += `G1 Z${safeZ} F${fRapid}\n`;
+            });
+            
+            txt += document.getElementById('cfg-footer').value;
+            document.getElementById('gcode-output').value = txt;
+            drawCanvas();
+            log("G-Code 生成成功!");
+        } catch (e) { log("Error: " + e.message); console.error(e); }
+    }
+
+    // =========================================
+    //  Rendering
+    // =========================================
+    function drawCanvas() {
+        ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#111"; ctx.fillRect(0,0, canvas.width, canvas.height);
+        ctx.setTransform(view.scale, 0, 0, view.scale, view.x, view.y);
+        
+        // Grid
+        const gridSize = parseFloat(document.getElementById('grid-size').value) || 10;
+        const startX = Math.floor((-view.x / view.scale) / gridSize) * gridSize;
+        const startY = Math.floor((-view.y / view.scale) / gridSize) * gridSize;
+        const endX = startX + (canvas.width / view.scale) + gridSize;
+        const endY = startY + (canvas.height / view.scale) + gridSize;
+
+        ctx.lineWidth = 1 / view.scale; ctx.strokeStyle = '#333'; ctx.beginPath();
+        for (let x = startX; x <= endX; x += gridSize) { ctx.moveTo(x, startY); ctx.lineTo(x, endY); }
+        for (let y = startY; y <= endY; y += gridSize) { ctx.moveTo(startX, y); ctx.lineTo(endX, y); }
+        ctx.stroke();
+
+        ctx.lineWidth = 2 / view.scale; ctx.strokeStyle = '#666'; ctx.beginPath();
+        ctx.moveTo(startX,0); ctx.lineTo(endX,0); ctx.moveTo(0,startY); ctx.lineTo(0,endY); ctx.stroke();
+        ctx.fillStyle = '#ff4444'; ctx.beginPath(); ctx.arc(0,0, 3/view.scale, 0, 6.28); ctx.fill();
+
+        // CAD Objects
+        ctx.lineWidth = 1.5 / view.scale;
+        drawnObjects.forEach((obj, idx) => {
+            if(!obj.points || obj.points.length < 2) return;
+            ctx.beginPath(); ctx.moveTo(obj.points[0].x, obj.points[0].y);
+            for(let i=1; i<obj.points.length; i++) ctx.lineTo(obj.points[i].x, obj.points[i].y);
+            ctx.strokeStyle = (idx === selectedIndex) ? '#00ffff' : '#e0e0e0'; ctx.stroke();
+        });
+
+        // Toolpaths
+        ctx.lineWidth = 1.5 / view.scale; ctx.strokeStyle = '#ff3333';
+        toolPaths.forEach(pts => {
+            if(!pts || pts.length < 2) return;
+            ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+            for(let i=1; i<pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+            ctx.stroke();
+            ctx.fillStyle='#ff3333'; ctx.beginPath(); ctx.arc(pts[0].x,pts[0].y, 3/view.scale, 0, 6.28); ctx.fill();
+        });
+
+        // Interactive Preview
+        if (drawStep > 0 && tempPoints.length > 0) {
+            ctx.strokeStyle = '#ffcc00'; ctx.setLineDash([5/view.scale, 5/view.scale]);
+            ctx.beginPath(); 
+            
+            if (currentMode === 'LINE') {
+                ctx.moveTo(tempPoints[0].x, tempPoints[0].y); ctx.lineTo(currentWorldPos.x, currentWorldPos.y);
+            } else if (currentMode === 'ARC') {
+                if(drawStep === 1) {
+                    ctx.moveTo(tempPoints[0].x, tempPoints[0].y); ctx.lineTo(currentWorldPos.x, currentWorldPos.y);
+                } else if(drawStep === 2) {
+                    const previewArc = generateArcPoints(tempPoints[0], tempPoints[1], currentWorldPos, true); 
+                    if(previewArc && previewArc.length > 0) {
+                        ctx.moveTo(previewArc[0].x, previewArc[0].y);
+                        for(let i=1; i<previewArc.length; i++) ctx.lineTo(previewArc[i].x, previewArc[i].y);
+                    } else {
+                         ctx.moveTo(tempPoints[0].x, tempPoints[0].y); ctx.lineTo(tempPoints[1].x, tempPoints[1].y);
+                    }
+                }
+            }
+            ctx.stroke(); ctx.setLineDash([]);
+        }
+        if (snapPoint && (currentMode !== 'SELECT')) {
+            ctx.strokeStyle = '#0f0'; ctx.lineWidth = 2/view.scale;
+            ctx.beginPath(); ctx.arc(snapPoint.x, snapPoint.y, 5/view.scale, 0, 6.28); ctx.stroke();
+        }
+    }
+
+    // Math Utils
+    function selectObjectAt(pos) {
+        let minD = 5 / view.scale; selectedIndex = -1;
+        drawnObjects.forEach((obj, idx) => {
+            if(!obj.points) return;
+            for(let i=0; i<obj.points.length-1; i++) {
+                const d = ptSegDist(pos, obj.points[i], obj.points[i+1]);
+                if(d < minD) { minD = d; selectedIndex = idx; }
+            }
+        });
+        drawCanvas();
+        if(selectedIndex !== -1) log("Object selected.");
+    }
+    function ptSegDist(p, v, w) {
+        let l2 = (w.x-v.x)**2 + (w.y-v.y)**2; if(l2==0) return Math.hypot(p.x-v.x, p.y-v.y);
+        let t = Math.max(0, Math.min(1, ((p.x-v.x)*(w.x-v.x) + (p.y-v.y)*(w.y-v.y))/l2));
+        return Math.hypot(p.x-(v.x+t*(w.x-v.x)), p.y-(v.y+t*(w.y-v.y)));
+    }
+    function deleteSelected() { if(selectedIndex>=0) { drawnObjects.splice(selectedIndex,1); selectedIndex=-1; drawCanvas(); log("Deleted.");} }
+    function clearAll() { if(confirm('Clear all?')) { drawnObjects=[]; toolPaths=[]; resetView(); log("Canvas cleared.");} }
+    function downloadGcode() { 
+        const txt = document.getElementById('gcode-output').value;
+        if(!txt || txt.length < 10) return log("G-Code empty.");
+        const b = new Blob([txt],{type:'text/plain'});
+        const a = document.createElement('a'); a.href=URL.createObjectURL(b); a.download='path.nc'; a.click();
+    }
+    function calculateRadius(p1,p2,p3){
+        let x1=p1.x,y1=p1.y,x2=p2.x,y2=p2.y,x3=p3.x,y3=p3.y;
+        let D = 2*(x1*(y2-y3)+x2*(y3-y1)+x3*(y1-y2));
+        if(Math.abs(D)<0.001) return null;
+        let Ux = ((x1**2+y1**2)*(y2-y3)+(x2**2+y2**2)*(y3-y1)+(x3**2+y3**2)*(y1-y2))/D;
+        let Uy = ((x1**2+y1**2)*(x3-x2)+(x2**2+y2**2)*(x1-x3)+(x3**2+y3**2)*(x2-x1))/D;
+        return Math.hypot(x1-Ux, y1-Uy);
+    }
+    function generateArcPoints(p1,p2,p3, isPreview) {
+        let r = calculateRadius(p1,p2,p3);
+        if(!r) return [p1,p2]; 
+        
+        let x1=p1.x,y1=p1.y,x2=p2.x,y2=p2.y,x3=p3.x,y3=p3.y;
+        let D = 2*(x1*(y2-y3)+x2*(y3-y1)+x3*(y1-y2));
+        let cx = ((x1**2+y1**2)*(y2-y3)+(x2**2+y2**2)*(y3-y1)+(x3**2+y3**2)*(y1-y2))/D;
+        let cy = ((x1**2+y1**2)*(x3-x2)+(x2**2+y2**2)*(x1-x3)+(x3**2+y3**2)*(x2-x1))/D;
+        
+        let a1 = Math.atan2(y1-cy, x1-cx), a2 = Math.atan2(y2-cy, x2-cx), a3 = Math.atan2(y3-cy, x3-cx);
+        let da1 = a3-a1; while(da1<=-Math.PI) da1+=2*Math.PI; while(da1>Math.PI) da1-=2*Math.PI;
+        let da2 = a2-a3; while(da2<=-Math.PI) da2+=2*Math.PI; while(da2>Math.PI) da2-=2*Math.PI;
+        let sweep = da1+da2;
+        
+        let segs = Math.max(4, Math.ceil(Math.abs(sweep*r)/0.5));
+        if (isPreview && segs > 100) segs = 100; 
+
+        let pts=[]; 
+        for(let i=0;i<=segs;i++) { 
+            let a=a1+sweep*(i/segs); 
+            pts.push({x:cx+Math.cos(a)*r, y:cy+Math.sin(a)*r}); 
+        }
+        return pts;
+    }
+
+    init();
+</script>
+</body>
+</html>
