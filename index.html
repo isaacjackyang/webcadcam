@@ -1,237 +1,294 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebCAM-Lite v7.6: UX Polish</title>
-    <style>
-        :root { --bg-color: #1e1e1e; --text-color: #e0e0e0; --accent: #007acc; --panel-bg: #252526; --border: #3e3e42; --canvas-bg: #111; --dash-bg: #1a1a1a; }
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg-color); color: var(--text-color); display: flex; height: 100vh; overflow: hidden; user-select: none; }
-        
-        /* Layout */
-        .sidebar { width: 380px; background: var(--panel-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; z-index: 20; box-shadow: 2px 0 5px rgba(0,0,0,0.3); }
-        .main-content { flex: 1; display: flex; flex-direction: column; position: relative; min-width: 0; }
-        
-        /* Toolbar */
-        .cad-toolbar { background: #333; padding: 6px; display: flex; gap: 4px; border-bottom: 1px solid var(--border); align-items: center; flex-wrap: wrap; z-index: 6; }
-        .toolbar-group { display: flex; gap: 2px; border-right: 1px solid #555; padding-right: 6px; align-items: center; margin-right: 2px; }
-        
-        .toolbar-btn { 
-            background: #444; color: #eee; border: 1px solid #555; 
-            padding: 4px 8px; cursor: pointer; border-radius: 4px; 
-            font-size: 0.85em; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            min-width: 55px; height: 48px; transition: 0.1s; 
-        }
-        .toolbar-btn span.icon { font-size: 1.4em; margin-bottom: 2px; }
-        .toolbar-btn span.text { font-size: 0.75em; font-weight: bold; }
-        
-        .toolbar-btn:hover { background: #555; transform: translateY(-1px); }
-        .toolbar-btn:active { transform: translateY(1px); }
-        .toolbar-btn.active { background: var(--accent); border-color: var(--accent); color: white; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
-        .toolbar-btn.toggle.on { background: #2e7d32; border-color: #4caf50; color: white; }
-        .toolbar-btn.danger { color: #ff9999; border-color: #883333; }
-        .toolbar-btn.success { color: #88ff88; border-color: #338833; }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebCAM-Lite v7.7: Snap Options + Numeric Input + DXF I/O</title>
+  <style>
+    :root { --bg-color:#1e1e1e; --text-color:#e0e0e0; --accent:#007acc; --panel-bg:#252526; --border:#3e3e42; --canvas-bg:#111; --dash-bg:#1a1a1a; }
+    body { margin:0; font-family:'Segoe UI',sans-serif; background:var(--bg-color); color:var(--text-color); display:flex; height:100vh; overflow:hidden; user-select:none; }
+    .sidebar { width:380px; background:var(--panel-bg); border-right:1px solid var(--border); display:flex; flex-direction:column; flex-shrink:0; z-index:20; box-shadow:2px 0 5px rgba(0,0,0,0.3); }
+    .main-content { flex:1; display:flex; flex-direction:column; position:relative; min-width:0; }
 
-        .status-bar { background: #007acc; color: white; padding: 2px 10px; font-size: 0.75em; font-family: monospace; display: flex; justify-content: space-between; border-top: 1px solid #333; z-index: 6;}
-        .preview-area { flex: 1; background: var(--canvas-bg); position: relative; overflow: hidden; cursor: crosshair; }
-        
-        /* Inputs & Scroll Area */
-        .scroll-area { padding: 10px; overflow-y: auto; flex: 1; }
-        .control-group { margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 10px; }
-        label { display: block; margin-bottom: 2px; font-size: 0.8em; color: #aaa; }
-        input[type="number"], input[type="text"], select { width: 100%; box-sizing: border-box; background: #3c3c3c; border: 1px solid #555; color: white; padding: 5px; font-size: 0.9em; border-radius: 3px; }
-        .row { display: flex; gap: 5px; margin-bottom: 5px; } .col { flex: 1; }
-        
-        .btn { background: var(--accent); color: white; border: none; padding: 8px; cursor: pointer; width: 100%; font-weight: bold; border-radius: 3px; font-size: 0.9em;}
-        .btn:hover { filter: brightness(1.1); }
-        .btn-green { background: #388e3c; } .btn-orange { background: #f57c00; } .btn-red { background: #d32f2f; }
-        .btn-small { padding: 4px 8px; font-size: 0.8em; width: auto; }
+    .cad-toolbar { background:#333; padding:6px; display:flex; gap:4px; border-bottom:1px solid var(--border); align-items:center; flex-wrap:wrap; z-index:6; }
+    .toolbar-group { display:flex; gap:2px; border-right:1px solid #555; padding-right:6px; align-items:center; margin-right:2px; }
+    .toolbar-btn {
+      background:#444; color:#eee; border:1px solid #555;
+      padding:4px 8px; cursor:pointer; border-radius:4px;
+      font-size:0.85em; display:flex; flex-direction:column; align-items:center; justify-content:center;
+      min-width:55px; height:48px; transition:0.1s;
+    }
+    .toolbar-btn span.icon { font-size:1.4em; margin-bottom:2px; }
+    .toolbar-btn span.text { font-size:0.75em; font-weight:bold; }
+    .toolbar-btn:hover { background:#555; transform:translateY(-1px); }
+    .toolbar-btn:active { transform:translateY(1px); }
+    .toolbar-btn.active { background:var(--accent); border-color:var(--accent); color:white; box-shadow:inset 0 2px 4px rgba(0,0,0,0.2); }
+    .toolbar-btn.toggle.on { background:#2e7d32; border-color:#4caf50; color:white; }
+    .toolbar-btn.danger { color:#ff9999; border-color:#883333; }
+    .toolbar-btn.success { color:#88ff88; border-color:#338833; }
 
-        /* Operations List */
-        .op-list { list-style: none; padding: 0; margin: 0; height: 140px; overflow-y: auto; background: #151515; border: 1px solid #444; border-radius: 3px; }
-        .op-item { padding: 6px 8px; border-bottom: 1px solid #333; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 0.9em; }
-        .op-item:hover { background: #2a2a2a; } 
-        .op-item.active { background-color: #005a8c !important; border-left: 4px solid #00dbff; color: white; }
-        .op-actions { display: flex; gap: 5px; margin-top: 5px; }
-        
-        /* Sim Panel */
-        .sim-panel { background: #252526; padding: 8px; border-top: 2px solid #ffaa00; margin-bottom: 10px; border-radius: 4px; border: 1px solid #444;}
-        .sim-controls { display: flex; gap: 5px; align-items: center; margin-bottom: 5px; }
-        input[type=range] { width: 100%; cursor: pointer; }
+    .status-bar { background:#007acc; color:white; padding:2px 10px; font-size:0.75em; font-family:monospace; display:flex; justify-content:space-between; border-top:1px solid #333; z-index:6; }
+    .preview-area { flex:1; background:var(--canvas-bg); position:relative; overflow:hidden; cursor:crosshair; }
 
-        /* Dashboard Panel */
-        .dash-panel { background: var(--dash-bg); padding: 8px; border-left: 3px solid #00ff00; margin-bottom: 10px; border-radius: 3px; font-family: monospace; font-size: 0.85em; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
-        .dash-item { display: flex; flex-direction: column; }
-        .dash-label { color: #888; font-size: 0.8em; }
-        .dash-val { color: #00ff00; font-weight: bold; font-size: 1.1em; }
-        .dash-unit { color: #666; font-size: 0.8em; }
+    .scroll-area { padding:10px; overflow-y:auto; flex:1; }
+    .control-group { margin-bottom:10px; border-bottom:1px solid #333; padding-bottom:10px; }
+    label { display:block; margin-bottom:2px; font-size:0.8em; color:#aaa; }
+    input[type="number"], input[type="text"], select {
+      width:100%; box-sizing:border-box; background:#3c3c3c; border:1px solid #555; color:white;
+      padding:5px; font-size:0.9em; border-radius:3px;
+    }
+    .row { display:flex; gap:5px; margin-bottom:5px; }
+    .col { flex:1; }
 
-        #file-input { display: none; }
-        .hidden { display: none; }
-        .laser-box { border-left: 3px solid #ff3333; padding-left: 5px; }
-        
-        /* Overlay */
-        #overlay-info { position: absolute; top: 10px; left: 10px; pointer-events: none; color: lime; text-shadow: 1px 1px 1px black; font-family: monospace; font-size: 14px; white-space: pre; }
-        #log-display { color: #fff; margin-right: 10px; font-weight: bold; }
-        
-        .toggle-row { display: flex; align-items: center; gap: 5px; cursor: pointer; font-size:0.85em; color:#ccc;}
-        input[type="checkbox"] { margin: 0; width: auto; }
-    </style>
+    .btn { background:var(--accent); color:white; border:none; padding:8px; cursor:pointer; width:100%; font-weight:bold; border-radius:3px; font-size:0.9em; }
+    .btn:hover { filter:brightness(1.1); }
+    .btn-green { background:#388e3c; } .btn-orange { background:#f57c00; } .btn-red { background:#d32f2f; }
+    .btn-small { padding:4px 8px; font-size:0.8em; width:auto; }
+
+    .op-list { list-style:none; padding:0; margin:0; height:140px; overflow-y:auto; background:#151515; border:1px solid #444; border-radius:3px; }
+    .op-item { padding:6px 8px; border-bottom:1px solid #333; cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-size:0.9em; }
+    .op-item:hover { background:#2a2a2a; }
+    .op-item.active { background-color:#005a8c !important; border-left:4px solid #00dbff; color:white; }
+    .op-actions { display:flex; gap:5px; margin-top:5px; }
+
+    .sim-panel { background:#252526; padding:8px; border-top:2px solid #ffaa00; margin-bottom:10px; border-radius:4px; border:1px solid #444; }
+    .sim-controls { display:flex; gap:5px; align-items:center; margin-bottom:5px; }
+    input[type=range] { width:100%; cursor:pointer; }
+
+    .dash-panel { background:var(--dash-bg); padding:8px; border-left:3px solid #00ff00; margin-bottom:10px; border-radius:3px; font-family:monospace; font-size:0.85em; display:grid; grid-template-columns:1fr 1fr; gap:5px; }
+    .dash-item { display:flex; flex-direction:column; }
+    .dash-label { color:#888; font-size:0.8em; }
+    .dash-val { color:#00ff00; font-weight:bold; font-size:1.1em; }
+    .dash-unit { color:#666; font-size:0.8em; }
+
+    #file-input { display:none; }
+    #file-input-dxf { display:none; }
+    .hidden { display:none; }
+    .laser-box { border-left:3px solid #ff3333; padding-left:5px; }
+
+    #overlay-info { position:absolute; top:10px; left:10px; pointer-events:none; color:lime; text-shadow:1px 1px 1px black; font-family:monospace; font-size:14px; white-space:pre; }
+    #log-display { color:#fff; margin-right:10px; font-weight:bold; }
+
+    .toggle-row { display:flex; align-items:center; gap:6px; cursor:pointer; font-size:0.85em; color:#ccc; }
+    input[type="checkbox"] { margin:0; width:auto; }
+
+    /* Numeric panel overlay */
+    #numeric-panel {
+      position:absolute; right:10px; top:10px; z-index:10;
+      background:rgba(25,25,25,0.92); border:1px solid #444; border-radius:6px;
+      padding:10px; width:260px; box-shadow:0 6px 18px rgba(0,0,0,0.35);
+      font-family:monospace;
+    }
+    #numeric-panel .np-title { color:#ffcc00; font-weight:bold; margin-bottom:6px; font-family:'Segoe UI',sans-serif; }
+    #numeric-panel .np-hint { color:#aaa; font-size:12px; margin-bottom:8px; font-family:'Segoe UI',sans-serif; }
+    #numeric-panel .np-row { display:flex; gap:6px; margin-bottom:6px; }
+    #numeric-panel .np-col { flex:1; }
+    #numeric-panel input, #numeric-panel select {
+      width:100%; background:#2f2f2f; border:1px solid #555; color:#fff; padding:6px; border-radius:4px;
+      font-size:13px;
+    }
+    #numeric-panel .np-actions { display:flex; gap:6px; margin-top:8px; }
+    #numeric-panel .np-actions button {
+      flex:1; padding:7px; border-radius:4px; border:none; cursor:pointer; font-weight:bold;
+    }
+    #btn-np-apply { background:#2e7d32; color:#fff; }
+    #btn-np-clear { background:#555; color:#fff; }
+  </style>
 </head>
 <body>
 
 <div class="sidebar">
-    <div class="control-group" style="padding: 10px; background: #252526; border-bottom: 2px solid #007acc; margin-bottom: 0;">
-        <label style="color:#007acc; font-size:1.1em; font-weight:bold;">WEB-CAM v7.6</label>
-        <div style="font-size:0.8em; color:#aaa; margin-top:2px;">UX Polish (Stable)</div>
+  <div class="control-group" style="padding:10px; background:#252526; border-bottom:2px solid #007acc; margin-bottom:0;">
+    <label style="color:#007acc; font-size:1.1em; font-weight:bold;">WEB-CAM v7.7</label>
+    <div style="font-size:0.8em; color:#aaa; margin-top:2px;">Snap Options + Numeric Input + DXF I/O</div>
+  </div>
+
+  <div class="scroll-area">
+
+    <div class="dash-panel" id="dashboard">
+      <div class="dash-item"><span class="dash-label">每刃吃刀 (Fz)</span><span><span id="dash-fz" class="dash-val">--</span> <span class="dash-unit">mm</span></span></div>
+      <div class="dash-item"><span class="dash-label">表面速度 (Vc)</span><span><span id="dash-vc" class="dash-val">--</span> <span class="dash-unit">m/min</span></span></div>
+      <div class="dash-item"><span class="dash-label">材料移除率</span><span><span id="dash-mrr" class="dash-val">--</span> <span class="dash-unit">cm³/m</span></span></div>
+      <div class="dash-item"><span class="dash-label">主軸轉速</span><span><span id="dash-rpm" class="dash-val">--</span> <span class="dash-unit">RPM</span></span></div>
     </div>
 
-    <div class="scroll-area">
-        
-        <div class="dash-panel" id="dashboard">
-            <div class="dash-item"><span class="dash-label">每刃吃刀 (Fz)</span><span><span id="dash-fz" class="dash-val">--</span> <span class="dash-unit">mm</span></span></div>
-            <div class="dash-item"><span class="dash-label">表面速度 (Vc)</span><span><span id="dash-vc" class="dash-val">--</span> <span class="dash-unit">m/min</span></span></div>
-            <div class="dash-item"><span class="dash-label">材料移除率</span><span><span id="dash-mrr" class="dash-val">--</span> <span class="dash-unit">cm³/m</span></span></div>
-            <div class="dash-item"><span class="dash-label">主軸轉速</span><span><span id="dash-rpm" class="dash-val">--</span> <span class="dash-unit">RPM</span></span></div>
-        </div>
-
-        <div class="sim-panel">
-            <label style="color:#ffaa00; font-weight:bold; margin-bottom:5px;">📺 2D 模擬</label>
-            <div class="sim-controls">
-                <button id="btn-sim-play" class="btn btn-small" onclick="toggleSim()">▶️ 播放</button>
-                <button class="btn btn-small" onclick="stopSim()">⏹️ 停止</button>
-                <label>速度:</label>
-                <input type="range" id="sim-speed" min="1" max="100" value="20" style="width:60px;">
-            </div>
-            <input type="range" id="sim-progress" min="0" max="100" value="0" step="0.1" oninput="scrubSim()">
-        </div>
-
-        <div class="control-group laser-box">
-            <label style="color:#ff3333; font-weight:bold;">機台模式</label>
-            <div class="row">
-                <label class="toggle-row"><input type="checkbox" id="chk-laser-mode" onchange="toggleLaserMode()"> 雷射模式 (Laser Mode)</label>
-            </div>
-            <div id="laser-params" class="hidden">
-                <div class="row"><div class="col"><label>雷射功率 (S)</label><input type="number" id="laser-power" value="1000"></div></div>
-            </div>
-        </div>
-
-        <div class="control-group" id="params-container">
-            <label style="color:#ffcc00; font-weight:bold;">策略與刀具</label>
-            <div class="row">
-                <div class="col"><label>刀號 (T)</label><input type="number" id="tool-no" value="1"></div>
-                <div class="col"><label>刀徑 (D)</label><input type="number" id="tool-dia" value="3.175" oninput="updateDashboard()"></div>
-                <div class="col"><label>刃數 (Z)</label><input type="number" id="tool-flutes" value="2" oninput="updateDashboard()"></div>
-            </div>
-            <div class="row">
-                <div class="col"><label>工法</label><select id="op-mode" onchange="updateUI()"><option value="profile">輪廓 (Profile)</option><option value="pocket">挖槽 (Pocket)</option></select></div>
-                <div class="col"><label>偏移</label><select id="op-offset"><option value="none">中心</option><option value="left">左 (Left)</option><option value="right" selected>右 (Right)</option></select></div>
-            </div>
-            <div class="row">
-                <div class="col"><label>方向</label><select id="op-direction"><option value="auto">依照畫圖</option><option value="cw" selected>順時針 (CW)</option><option value="ccw">逆時針 (CCW)</option></select></div>
-                <div class="col"><label>轉速 (S)</label><input type="number" id="tool-rpm" value="12000" oninput="updateDashboard()"></div>
-            </div>
-            <div class="row">
-                 <div class="col"><label>預留 (Stock)</label><input type="number" id="stock-leave" value="0.0"></div>
-            </div>
-            <div id="stepover-container" class="hidden" style="margin-top:5px;">
-                <label>掃描間距</label><input type="number" id="stepover-dist" value="1.5">
-            </div>
-        </div>
-
-        <div class="control-group">
-            <label style="font-weight:bold;">進給與深度</label>
-            <div class="row">
-                <div class="col"><label>切削 F (mm/min)</label><input type="number" id="feed-cut" value="800" oninput="updateDashboard()"></div>
-                <div class="col"><label>下刀 F</label><input type="number" id="feed-plunge" value="300"></div>
-            </div>
-            <div class="row">
-                <div class="col"><label>安全高 Z</label><input type="number" id="safe-z" value="5.0"></div>
-                <div class="col"><label>表面 Z</label><input type="number" id="start-z" value="0.0"></div>
-            </div>
-            <div class="row">
-                <div class="col"><label>總深 Z</label><input type="number" id="cut-z" value="-5.0" oninput="updateDashboard()"></div>
-                <div class="col"><label>每層下刀</label><input type="number" id="step-down" value="2.0" oninput="updateDashboard()"></div>
-            </div>
-             <div class="row">
-                <div class="col" style="display:flex; align-items:flex-end;"><label class="toggle-row"><input type="checkbox" id="chk-ramping"> 斜下刀</label></div>
-                 <div class="col"><label>XY 快移</label><input type="number" id="feed-rapid" value="2000"></div>
-            </div>
-        </div>
-
-        <div class="control-group">
-            <label style="color:#fff; font-weight:bold;">📑 工法管理</label>
-            <input type="text" id="op-name-input" placeholder="工法名稱..." style="border-left: 3px solid #ffcc00; margin-bottom: 5px;">
-            <ul id="op-list" class="op-list"></ul>
-            <div class="op-actions">
-                <button class="btn btn-green" onclick="addOperation()">➕ 新增</button>
-                <button class="btn btn-orange" onclick="updateOperation()">💾 更新</button>
-                <button class="btn btn-red" onclick="deleteOperation()">🗑️ 刪除</button>
-                <button class="btn" onclick="moveOp(-1)">⬆️</button>
-                <button class="btn" onclick="moveOp(1)">⬇️</button>
-            </div>
-        </div>
-
-        <div style="display:flex; gap:5px; margin-top:10px;">
-            <button class="btn" style="flex:2; height:45px; font-size:1.1em;" onclick="generateAllGcode()">🚀 產生 G-Code</button>
-            <button class="btn btn-red" style="flex:1;" onclick="clearToolPaths()">🧹 路徑</button>
-        </div>
-        
-        <div class="control-group" style="margin-top:15px; border:none;">
-            <div class="row">
-                <div class="col"><label>網格大小 (mm)</label><input type="number" id="grid-size" value="2" min="1" step="1" onchange="drawRequest()"></div>
-            </div>
-            <div class="row"><label class="toggle-row"><input type="checkbox" id="chk-auto-merge" checked> 輸出時自動合併路徑</label></div>
-        </div>
+    <div class="sim-panel">
+      <label style="color:#ffaa00; font-weight:bold; margin-bottom:5px;">📺 2D 模擬</label>
+      <div class="sim-controls">
+        <button id="btn-sim-play" class="btn btn-small" onclick="toggleSim()">▶️ 播放</button>
+        <button class="btn btn-small" onclick="stopSim()">⏹️ 停止</button>
+        <label>速度:</label>
+        <input type="range" id="sim-speed" min="1" max="100" value="20" style="width:60px;">
+      </div>
+      <input type="range" id="sim-progress" min="0" max="100" value="0" step="0.1" oninput="scrubSim()">
     </div>
+
+    <div class="control-group" style="border-left:3px solid #00dbff; padding-left:6px;">
+      <label style="color:#00dbff; font-weight:bold;">🧲 吸附 (Snap)</label>
+      <div class="row">
+        <label class="toggle-row"><input type="checkbox" id="snap-end" checked onchange="updateSnapOptions()"> 端點 End</label>
+        <label class="toggle-row"><input type="checkbox" id="snap-mid" checked onchange="updateSnapOptions()"> 中點 Mid</label>
+      </div>
+      <div class="row">
+        <label class="toggle-row"><input type="checkbox" id="snap-origin" checked onchange="updateSnapOptions()"> 原點 Origin</label>
+        <label class="toggle-row"><input type="checkbox" id="snap-grid" onchange="updateSnapOptions()"> 格點 Grid</label>
+      </div>
+      <div class="row">
+        <label class="toggle-row"><input type="checkbox" id="snap-near" checked onchange="updateSnapOptions()"> 最近點 Near</label>
+        <label class="toggle-row"><input type="checkbox" id="snap-center" onchange="updateSnapOptions()"> 中心 Center</label>
+      </div>
+      <div style="font-size:12px; color:#888; margin-top:6px; line-height:1.3;">
+        Near = 線段投影最近點（做幾何對齊很有用）<br>
+        Center = 封閉圖形的中心（用 bbox 中心，避免 centroid 偏心）
+      </div>
+    </div>
+
+    <div class="control-group laser-box">
+      <label style="color:#ff3333; font-weight:bold;">機台模式</label>
+      <div class="row">
+        <label class="toggle-row"><input type="checkbox" id="chk-laser-mode" onchange="toggleLaserMode()"> 雷射模式 (Laser Mode)</label>
+      </div>
+      <div id="laser-params" class="hidden">
+        <div class="row"><div class="col"><label>雷射功率 (S)</label><input type="number" id="laser-power" value="1000"></div></div>
+      </div>
+    </div>
+
+    <div class="control-group" id="params-container">
+      <label style="color:#ffcc00; font-weight:bold;">策略與刀具</label>
+      <div class="row">
+        <div class="col"><label>刀號 (T)</label><input type="number" id="tool-no" value="1"></div>
+        <div class="col"><label>刀徑 (D)</label><input type="number" id="tool-dia" value="3.175" oninput="updateDashboard()"></div>
+        <div class="col"><label>刃數 (Z)</label><input type="number" id="tool-flutes" value="2" oninput="updateDashboard()"></div>
+      </div>
+      <div class="row">
+        <div class="col"><label>工法</label><select id="op-mode" onchange="updateUI()"><option value="profile">輪廓 (Profile)</option><option value="pocket">挖槽 (Pocket)</option></select></div>
+        <div class="col"><label>偏移</label><select id="op-offset"><option value="none">中心</option><option value="left">左 (Left)</option><option value="right" selected>右 (Right)</option></select></div>
+      </div>
+      <div class="row">
+        <div class="col"><label>方向</label><select id="op-direction"><option value="auto">依照畫圖</option><option value="cw" selected>順時針 (CW)</option><option value="ccw">逆時針 (CCW)</option></select></div>
+        <div class="col"><label>轉速 (S)</label><input type="number" id="tool-rpm" value="12000" oninput="updateDashboard()"></div>
+      </div>
+      <div class="row">
+        <div class="col"><label>預留 (Stock)</label><input type="number" id="stock-leave" value="0.0"></div>
+      </div>
+      <div id="stepover-container" class="hidden" style="margin-top:5px;">
+        <label>掃描間距</label><input type="number" id="stepover-dist" value="1.5">
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label style="font-weight:bold;">進給與深度</label>
+      <div class="row">
+        <div class="col"><label>切削 F (mm/min)</label><input type="number" id="feed-cut" value="800" oninput="updateDashboard()"></div>
+        <div class="col"><label>下刀 F</label><input type="number" id="feed-plunge" value="300"></div>
+      </div>
+      <div class="row">
+        <div class="col"><label>安全高 Z</label><input type="number" id="safe-z" value="5.0"></div>
+        <div class="col"><label>表面 Z</label><input type="number" id="start-z" value="0.0"></div>
+      </div>
+      <div class="row">
+        <div class="col"><label>總深 Z</label><input type="number" id="cut-z" value="-5.0" oninput="updateDashboard()"></div>
+        <div class="col"><label>每層下刀</label><input type="number" id="step-down" value="2.0" oninput="updateDashboard()"></div>
+      </div>
+      <div class="row">
+        <div class="col" style="display:flex; align-items:flex-end;"><label class="toggle-row"><input type="checkbox" id="chk-ramping"> 斜下刀</label></div>
+        <div class="col"><label>XY 快移</label><input type="number" id="feed-rapid" value="2000"></div>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label style="color:#fff; font-weight:bold;">📑 工法管理</label>
+      <input type="text" id="op-name-input" placeholder="工法名稱..." style="border-left:3px solid #ffcc00; margin-bottom:5px;">
+      <ul id="op-list" class="op-list"></ul>
+      <div class="op-actions">
+        <button class="btn btn-green" onclick="addOperation()">➕ 新增</button>
+        <button class="btn btn-orange" onclick="updateOperation()">💾 更新</button>
+        <button class="btn btn-red" onclick="deleteOperation()">🗑️ 刪除</button>
+        <button class="btn" onclick="moveOp(-1)">⬆️</button>
+        <button class="btn" onclick="moveOp(1)">⬇️</button>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:5px; margin-top:10px;">
+      <button class="btn" style="flex:2; height:45px; font-size:1.1em;" onclick="generateAllGcode()">🚀 產生 G-Code</button>
+      <button class="btn btn-red" style="flex:1;" onclick="clearToolPaths()">🧹 路徑</button>
+    </div>
+
+    <div class="control-group" style="margin-top:15px; border:none;">
+      <div class="row">
+        <div class="col"><label>網格大小 (mm)</label><input type="number" id="grid-size" value="2" min="1" step="1" onchange="drawRequest()"></div>
+      </div>
+      <div class="row"><label class="toggle-row"><input type="checkbox" id="chk-auto-merge" checked> 輸出時自動合併路徑</label></div>
+      <div style="font-size:12px; color:#777; line-height:1.3; margin-top:6px;">
+        小提醒：你要「幾何更精準 / 對 CAM 更乾淨」，第一刀就是把吸附拆開。以前那種一鍋端的 snap 只會把你逼瘋。現在你可以只開 End+Near 或只開 Grid，避免偷吸到 midpoint 亂跑。
+      </div>
+    </div>
+
+  </div>
 </div>
 
 <div class="main-content">
-    <div class="cad-toolbar">
-        <div class="toolbar-group">
-            <button id="btn-select" class="toolbar-btn active" onclick="setMode('SELECT')"><span class="icon">👆</span><span class="text">選取</span></button>
-            <button id="btn-move" class="toolbar-btn" onclick="setMode('MOVE')"><span class="icon">✥</span><span class="text">移動</span></button>
-            <button id="btn-rotate" class="toolbar-btn" onclick="setMode('ROTATE')"><span class="icon">↻</span><span class="text">旋轉</span></button>
-        </div>
-        <div class="toolbar-group">
-            <button id="btn-line" class="toolbar-btn" onclick="setMode('LINE')"><span class="icon">📏</span><span class="text">直線</span></button>
-            <button id="btn-rect" class="toolbar-btn" onclick="setMode('RECT')"><span class="icon">⬜</span><span class="text">矩形</span></button>
-            <button id="btn-circle" class="toolbar-btn" onclick="setMode('CIRCLE')"><span class="icon">⚪</span><span class="text">圓形</span></button>
-            <button id="btn-arc" class="toolbar-btn" onclick="setMode('ARC')"><span class="icon">↪️</span><span class="text">圓弧</span></button>
-        </div>
-        <div class="toolbar-group">
-            <button id="btn-grid-toggle" class="toolbar-btn toggle" onclick="toggleGrid()"><span class="icon">▦</span><span class="text">網格</span></button>
-            <button id="btn-ortho-toggle" class="toolbar-btn toggle" onclick="toggleOrtho()"><span class="icon">⊥</span><span class="text">正交</span></button>
-        </div>
-        <div class="toolbar-group">
-            <button class="toolbar-btn success" onclick="document.getElementById('file-input').click()"><span class="icon">📂</span><span class="text">匯入</span></button>
-            <button class="toolbar-btn success" onclick="exportSVG()"><span class="icon">💾</span><span class="text">匯出</span></button>
-            <input type="file" id="file-input" accept=".svg" onchange="importSVG(this)">
-        </div>
-        <div class="toolbar-group" style="margin-left:auto;">
-            <button class="toolbar-btn danger" onclick="deleteSelected()"><span class="icon">🗑️</span><span class="text">刪除</span></button>
-            <button class="toolbar-btn" onclick="clearAll()"><span class="icon">💥</span><span class="text">清空</span></button>
-            <button class="toolbar-btn" onclick="resetView()"><span class="icon">🔍</span><span class="text">重置</span></button>
-        </div>
-        <div class="toolbar-group">
-             <button id="btn-undo" class="toolbar-btn" onclick="performUndo()"><span class="icon">↩️</span><span class="text">復原</span></button>
-             <button id="btn-redo" class="toolbar-btn" onclick="performRedo()"><span class="icon">↪️</span><span class="text">重做</span></button>
-        </div>
+  <div class="cad-toolbar">
+    <div class="toolbar-group">
+      <button id="btn-select" class="toolbar-btn active" onclick="setMode('SELECT')"><span class="icon">👆</span><span class="text">選取</span></button>
+      <button id="btn-move" class="toolbar-btn" onclick="setMode('MOVE')"><span class="icon">✥</span><span class="text">移動</span></button>
+      <button id="btn-rotate" class="toolbar-btn" onclick="setMode('ROTATE')"><span class="icon">↻</span><span class="text">旋轉</span></button>
+    </div>
+    <div class="toolbar-group">
+      <button id="btn-line" class="toolbar-btn" onclick="setMode('LINE')"><span class="icon">📏</span><span class="text">直線</span></button>
+      <button id="btn-rect" class="toolbar-btn" onclick="setMode('RECT')"><span class="icon">⬜</span><span class="text">矩形</span></button>
+      <button id="btn-circle" class="toolbar-btn" onclick="setMode('CIRCLE')"><span class="icon">⚪</span><span class="text">圓形</span></button>
+      <button id="btn-arc" class="toolbar-btn" onclick="setMode('ARC')"><span class="icon">↪️</span><span class="text">圓弧</span></button>
+      <button id="btn-poly" class="toolbar-btn" onclick="setMode('POLY')"><span class="icon">⬡</span><span class="text">多邊形</span></button>
+    </div>
+    <div class="toolbar-group">
+      <button id="btn-ortho-toggle" class="toolbar-btn toggle" onclick="toggleOrtho()"><span class="icon">⊥</span><span class="text">正交</span></button>
+    </div>
+    <div class="toolbar-group">
+      <button class="toolbar-btn success" onclick="document.getElementById('file-input').click()"><span class="icon">📂</span><span class="text">匯入SVG</span></button>
+      <button class="toolbar-btn success" onclick="exportSVG()"><span class="icon">💾</span><span class="text">匯出SVG</span></button>
+      <input type="file" id="file-input" accept=".svg" onchange="importSVG(this)">
+    </div>
+    <div class="toolbar-group">
+      <button class="toolbar-btn success" onclick="document.getElementById('file-input-dxf').click()"><span class="icon">📦</span><span class="text">匯入DXF</span></button>
+      <button class="toolbar-btn success" onclick="exportDXF()"><span class="icon">🧾</span><span class="text">匯出DXF</span></button>
+      <input type="file" id="file-input-dxf" accept=".dxf" onchange="importDXF(this)">
+    </div>
+    <div class="toolbar-group" style="margin-left:auto;">
+      <button class="toolbar-btn danger" onclick="deleteSelected()"><span class="icon">🗑️</span><span class="text">刪除</span></button>
+      <button class="toolbar-btn" onclick="clearAll()"><span class="icon">💥</span><span class="text">清空</span></button>
+      <button class="toolbar-btn" onclick="resetView()"><span class="icon">🔍</span><span class="text">重置</span></button>
+    </div>
+    <div class="toolbar-group">
+      <button id="btn-undo" class="toolbar-btn" onclick="performUndo()"><span class="icon">↩️</span><span class="text">復原</span></button>
+      <button id="btn-redo" class="toolbar-btn" onclick="performRedo()"><span class="icon">↪️</span><span class="text">重做</span></button>
+    </div>
+  </div>
+
+  <div class="preview-area" id="canvas-container">
+    <canvas id="cad-canvas"></canvas>
+
+    <div id="numeric-panel" class="hidden">
+      <div class="np-title" id="np-title">數值輸入</div>
+      <div class="np-hint" id="np-hint">在畫圖中輸入數值，按「套用」或 Enter。</div>
+      <div id="np-body"></div>
+      <div class="np-actions">
+        <button id="btn-np-apply" onclick="applyNumeric()">套用</button>
+        <button id="btn-np-clear" onclick="clearNumeric()">清除</button>
+      </div>
     </div>
 
-    <div class="preview-area" id="canvas-container">
-        <canvas id="cad-canvas"></canvas>
-        <div id="overlay-info"></div>
-    </div>
+    <div id="overlay-info"></div>
+  </div>
 
-    <div class="status-bar">
-        <span><span id="log-display">系統就緒</span> | <span id="status-mode">模式: SELECT</span></span>
-        <span id="status-coords">X:0.0 Y:0.0</span>
-    </div>
+  <div class="status-bar">
+    <span><span id="log-display">系統就緒</span> | <span id="status-mode">模式: SELECT</span></span>
+    <span id="status-coords">X:0.0 Y:0.0</span>
+  </div>
 
-    <div class="gcode-panel" style="height: 120px;">
-        <textarea id="gcode-output" readonly style="width:100%; height:100%; font-family:monospace; color:#0f0; background:#000; border:none; resize:none; padding:5px;"></textarea>
-    </div>
+  <div class="gcode-panel" style="height:120px;">
+    <textarea id="gcode-output" readonly style="width:100%; height:100%; font-family:monospace; color:#0f0; background:#000; border:none; resize:none; padding:5px;"></textarea>
+  </div>
 </div>
 
 <textarea id="cfg-header" style="display:none;">G21 G90 G17&#10;(Stock: X0 Y0)</textarea>
@@ -239,928 +296,1553 @@
 <textarea id="cfg-footer" style="display:none;">M5&#10;M30</textarea>
 
 <script>
-    // =========================================
-    //  Global State
-    // =========================================
-    const canvas = document.getElementById('cad-canvas');
-    const ctx = canvas.getContext('2d');
-    const container = document.getElementById('canvas-container');
-    const overlay = document.getElementById('overlay-info');
-    const logDisplay = document.getElementById('log-display');
+  // =========================================
+  //  Global State
+  // =========================================
+  const canvas = document.getElementById('cad-canvas');
+  const ctx = canvas.getContext('2d');
+  const container = document.getElementById('canvas-container');
+  const overlay = document.getElementById('overlay-info');
+  const logDisplay = document.getElementById('log-display');
 
-    function log(msg) {
-        logDisplay.innerText = msg;
-        console.log(msg);
-        setTimeout(() => {
-            if (logDisplay.innerText === msg) logDisplay.innerText = "";
-        }, 3000);
-    }
-    function uuid() { return 'id-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
+  const numericPanel = document.getElementById('numeric-panel');
+  const npTitle = document.getElementById('np-title');
+  const npHint = document.getElementById('np-hint');
+  const npBody = document.getElementById('np-body');
 
-    let view = { scale: 1.0, x: 0, y: 0 };
-    let isPanning = false, lastMouse = { x: 0, y: 0 };
+  function log(msg) {
+    logDisplay.innerText = msg;
+    console.log(msg);
+    setTimeout(() => { if (logDisplay.innerText === msg) logDisplay.innerText = ""; }, 3000);
+  }
+  function uuid() { return 'id-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 
-    // Core Data
-    let drawnObjects = [];
-    let historyStack = []; let historyStep = -1;
-    let operations = []; let activeOpIndex = -1;
-    let globalToolPaths = [];
+  let view = { scale: 1.0, x: 0, y: 0 };
+  let isPanning = false, lastMouse = { x: 0, y: 0 };
 
-    // Editor State
-    let currentMode = 'SELECT'; let selectedIDs = new Set();
-    let drawStep = 0; let tempPoints = []; let snapPoint = null; let currentWorldPos = { x: 0, y: 0 };
-    let isBoxSelecting = false; let boxStart = { x: 0, y: 0 }; let boxEnd = { x: 0, y: 0 };
-    let transformBase = { x: 0, y: 0 };
-    let isGridSnap = false; let isOrtho = false;
+  let drawnObjects = [];
+  let historyStack = []; let historyStep = -1;
+  let operations = []; let activeOpIndex = -1;
+  let globalToolPaths = [];
 
-    let simState = { active: false, paused: false, progress: 0, speed: 20, animId: null, flattenedPath: [], toolDia: 3.175 };
+  let currentMode = 'SELECT'; let selectedIDs = new Set();
+  let drawStep = 0; let tempPoints = []; let snapPoint = null; let currentWorldPos = { x: 0, y: 0 };
+  let isBoxSelecting = false; let boxStart = { x: 0, y: 0 }; let boxEnd = { x: 0, y: 0 };
+  let transformBase = { x: 0, y: 0 };
+  let isOrtho = false;
 
-    // Render Loop
-    let isRenderDirty = true;
+  // Snap options (拆開控制)
+  let snapOptions = {
+    end: true, mid: true, origin: true, grid: false, near: true, center: false
+  };
 
-    const SNAP_DIST_PX = 10;
-    const MERGE_TOLERANCE = 0.05;
+  let simState = { active: false, paused: false, progress: 0, speed: 20, animId: null, flattenedPath: [], toolDia: 3.175 };
 
-    // =========================================
-    //  Coordinate Transform
-    // =========================================
-    function screenToWorld(sx, sy) {
-        // screen(px) -> world(mm)
-        return {
-            x: (sx - view.x) / view.scale,
-            y: (sy - view.y) / view.scale
-        };
-    }
-    function worldToScreen(wx, wy) {
-        // world(mm) -> screen(px)
-        return {
-            x: wx * view.scale + view.x,
-            y: wy * view.scale + view.y
-        };
-    }
+  let isRenderDirty = true;
 
-    // =========================================
-    //  Wheel Zoom (FIX: was missing -> init() crash -> black screen)
-    // =========================================
-    function handleWheel(e) {
-        e.preventDefault();
+  const SNAP_DIST_PX = 10;
+  const MERGE_TOLERANCE = 0.05;
 
-        const rect = canvas.getBoundingClientRect();
-        const mx = e.clientX - rect.left;
-        const my = e.clientY - rect.top;
+  // Numeric inputs state
+  let numericInputs = {}; // dynamic fields by mode
+  function num(v) {
+    const x = parseFloat(v);
+    return Number.isFinite(x) ? x : null;
+  }
 
-        const before = screenToWorld(mx, my);
+  // =========================================
+  //  Coordinate Transform
+  // =========================================
+  function screenToWorld(sx, sy) { return { x: (sx - view.x) / view.scale, y: (sy - view.y) / view.scale }; }
+  function worldToScreen(wx, wy) { return { x: wx * view.scale + view.x, y: wy * view.scale + view.y }; }
 
-        // trackpad friendly: wheel delta varies; use exponential-ish zoom
-        const delta = e.deltaY;
-        const zoomFactor = Math.exp(-delta * 0.0015);
+  // =========================================
+  //  Zoom / Pan
+  // =========================================
+  function handleWheel(e) {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
 
-        const newScale = clamp(view.scale * zoomFactor, 2, 300); // clamp to avoid NaN/infinite grid hell
-        view.scale = newScale;
+    const before = screenToWorld(mx, my);
+    const zoomFactor = Math.exp(-e.deltaY * 0.0015);
 
-        const after = screenToWorld(mx, my);
+    const newScale = clamp(view.scale * zoomFactor, 2, 300);
+    view.scale = newScale;
 
-        // keep mouse world position fixed
-        view.x += (after.x - before.x) * view.scale;
-        view.y += (after.y - before.y) * view.scale;
+    const after = screenToWorld(mx, my);
+    view.x += (after.x - before.x) * view.scale;
+    view.y += (after.y - before.y) * view.scale;
 
-        drawRequest();
-    }
+    drawRequest();
+  }
 
-    function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+  // =========================================
+  //  Init
+  // =========================================
+  function init() {
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
 
-    // =========================================
-    //  Init
-    // =========================================
-    function init() {
-        if (!ctx) {
-            alert("Canvas 2D context 初始化失敗（ctx=null）。");
-            return;
+    resetView();
+    saveState();
+    updateSnapOptions();
+
+    canvas.addEventListener('wheel', handleWheel, { passive: false });
+    canvas.addEventListener('mousedown', handleMouseDown);
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mouseup', handleMouseUp);
+    canvas.addEventListener('contextmenu', (e) => { e.preventDefault(); cancelOperation(); });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        // 在 numeric panel 裡按 Enter：直接套用
+        if (e.key === 'Enter' && numericPanel && !numericPanel.classList.contains('hidden')) {
+          e.preventDefault();
+          applyNumeric();
         }
+        return;
+      }
+      if (e.key === 'Delete') deleteSelected();
+      if (e.key === 'Escape') cancelOperation();
+      if (e.key === 'Shift') { isOrtho = true; drawRequest(); }
+      if (e.ctrlKey && e.key === 'z') { e.preventDefault(); performUndo(); }
+      if (e.ctrlKey && e.key === 'y') { e.preventDefault(); performRedo(); }
+      // 快捷鍵：N 打開/聚焦數值輸入
+      if (e.key.toLowerCase() === 'n') { e.preventDefault(); focusNumericFirst(); }
+    });
 
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('keyup', (e) => {
+      if (e.key === 'Shift') {
+        isOrtho = document.getElementById('btn-ortho-toggle').classList.contains('on');
+        drawRequest();
+      }
+    });
 
-        resetView();      // set initial view scale/offset
+    updateUI();
+    toggleLaserMode();
+    updateDashboard();
+
+    requestAnimationFrame(renderLoop);
+    log("System v7.7 Ready.");
+  }
+
+  function renderLoop() {
+    if (isRenderDirty) { renderScene(); isRenderDirty = false; }
+    requestAnimationFrame(renderLoop);
+  }
+  function drawRequest() { isRenderDirty = true; }
+
+  function resizeCanvas() {
+    canvas.width = Math.max(1, container.clientWidth);
+    canvas.height = Math.max(1, container.clientHeight);
+    drawRequest();
+  }
+
+  function resetView() {
+    view.scale = 15.0;
+    view.x = canvas.width / 2;
+    view.y = canvas.height / 2;
+    drawRequest();
+  }
+
+  // =========================================
+  //  Dashboard
+  // =========================================
+  function updateDashboard() {
+    const rpm = parseFloat(document.getElementById('tool-rpm').value) || 0;
+    const feed = parseFloat(document.getElementById('feed-cut').value) || 0;
+    const flutes = parseFloat(document.getElementById('tool-flutes').value) || 1;
+    const dia = parseFloat(document.getElementById('tool-dia').value) || 3.175;
+    const stepDown = Math.abs(parseFloat(document.getElementById('step-down').value) || 1);
+
+    let fz = (rpm > 0 && flutes > 0) ? (feed / (rpm * flutes)) : 0;
+    let vc = (rpm * Math.PI * dia) / 1000;
+    let mrr = (dia * stepDown * feed) / 1000;
+
+    document.getElementById('dash-fz').innerText = fz.toFixed(4);
+    document.getElementById('dash-vc').innerText = vc.toFixed(1);
+    document.getElementById('dash-mrr').innerText = mrr.toFixed(2);
+    document.getElementById('dash-rpm').innerText = rpm;
+  }
+
+  // =========================================
+  //  Snap Options UI
+  // =========================================
+  function updateSnapOptions() {
+    snapOptions.end = document.getElementById('snap-end').checked;
+    snapOptions.mid = document.getElementById('snap-mid').checked;
+    snapOptions.origin = document.getElementById('snap-origin').checked;
+    snapOptions.grid = document.getElementById('snap-grid').checked;
+    snapOptions.near = document.getElementById('snap-near').checked;
+    snapOptions.center = document.getElementById('snap-center').checked;
+    drawRequest();
+  }
+
+  // =========================================
+  //  Numeric Panel
+  // =========================================
+  function showNumericPanel() {
+    numericPanel.classList.remove('hidden');
+  }
+  function hideNumericPanel() {
+    numericPanel.classList.add('hidden');
+  }
+  function clearNumeric() {
+    numericInputs = {};
+    updateNumericPanel();
+    drawRequest();
+  }
+  function focusNumericFirst() {
+    if (numericPanel.classList.contains('hidden')) return;
+    const first = numericPanel.querySelector('input,select');
+    if (first) first.focus();
+  }
+
+  function updateNumericPanel() {
+    // Only show when in drawing/transform step and supports numeric
+    const supported =
+      (currentMode === 'LINE' && drawStep >= 1) ||
+      (currentMode === 'CIRCLE' && drawStep >= 1) ||
+      (currentMode === 'RECT' && drawStep >= 1) ||
+      (currentMode === 'POLY' && drawStep >= 1) ||
+      (currentMode === 'MOVE' && drawStep >= 1) ||
+      (currentMode === 'ROTATE' && drawStep >= 1);
+
+    if (!supported) { hideNumericPanel(); return; }
+
+    showNumericPanel();
+
+    // Build panel body by mode
+    npBody.innerHTML = "";
+
+    if (currentMode === 'LINE') {
+      npTitle.innerText = "直線：數值輸入";
+      npHint.innerText = "L=長度(mm)，A=角度(°，以 +X 為 0，逆時針為正)。只填 L：角度跟著滑鼠方向。";
+      npBody.innerHTML = `
+        <div class="np-row">
+          <div class="np-col"><label style="color:#aaa; font-family:Segoe UI;">長度 L</label><input id="np-line-l" type="number" step="0.001" placeholder="mm"></div>
+          <div class="np-col"><label style="color:#aaa; font-family:Segoe UI;">角度 A</label><input id="np-line-a" type="number" step="0.01" placeholder="deg"></div>
+        </div>
+      `;
+      const l = document.getElementById('np-line-l');
+      const a = document.getElementById('np-line-a');
+      l.value = (numericInputs.lineL ?? "");
+      a.value = (numericInputs.lineA ?? "");
+      l.oninput = () => { numericInputs.lineL = l.value; drawRequest(); };
+      a.oninput = () => { numericInputs.lineA = a.value; drawRequest(); };
+    }
+
+    if (currentMode === 'CIRCLE') {
+      npTitle.innerText = "圓形：數值輸入";
+      npHint.innerText = "R=半徑(mm)。輸入後按套用或 Enter 即可成圓（不必第二次點）。";
+      npBody.innerHTML = `
+        <div class="np-row">
+          <div class="np-col"><label style="color:#aaa; font-family:Segoe UI;">半徑 R</label><input id="np-cir-r" type="number" step="0.001" placeholder="mm"></div>
+          <div class="np-col"><label style="color:#aaa; font-family:Segoe UI;">分段</label><input id="np-cir-seg" type="number" step="1" min="16" max="720" placeholder="64"></div>
+        </div>
+      `;
+      const r = document.getElementById('np-cir-r');
+      const seg = document.getElementById('np-cir-seg');
+      r.value = (numericInputs.cirR ?? "");
+      seg.value = (numericInputs.cirSeg ?? "");
+      r.oninput = () => { numericInputs.cirR = r.value; drawRequest(); };
+      seg.oninput = () => { numericInputs.cirSeg = seg.value; drawRequest(); };
+    }
+
+    if (currentMode === 'RECT') {
+      npTitle.innerText = "矩形：數值輸入";
+      npHint.innerText = "W/H(mm)。方向(象限)跟著滑鼠，只有數字負責大小。";
+      npBody.innerHTML = `
+        <div class="np-row">
+          <div class="np-col"><label style="color:#aaa; font-family:Segoe UI;">寬 W</label><input id="np-rect-w" type="number" step="0.001" placeholder="mm"></div>
+          <div class="np-col"><label style="color:#aaa; font-family:Segoe UI;">高 H</label><input id="np-rect-h" type="number" step="0.001" placeholder="mm"></div>
+        </div>
+      `;
+      const w = document.getElementById('np-rect-w');
+      const h = document.getElementById('np-rect-h');
+      w.value = (numericInputs.rectW ?? "");
+      h.value = (numericInputs.rectH ?? "");
+      w.oninput = () => { numericInputs.rectW = w.value; drawRequest(); };
+      h.oninput = () => { numericInputs.rectH = h.value; drawRequest(); };
+    }
+
+    if (currentMode === 'POLY') {
+      npTitle.innerText = "多邊形：數值輸入";
+      npHint.innerText = "N=邊數，R=外接圓半徑(mm)。輸入後套用即可生成。";
+      npBody.innerHTML = `
+        <div class="np-row">
+          <div class="np-col"><label style="color:#aaa; font-family:Segoe UI;">邊數 N</label><input id="np-poly-n" type="number" step="1" min="3" max="200" placeholder="6"></div>
+          <div class="np-col"><label style="color:#aaa; font-family:Segoe UI;">半徑 R</label><input id="np-poly-r" type="number" step="0.001" placeholder="mm"></div>
+        </div>
+      `;
+      const n = document.getElementById('np-poly-n');
+      const r = document.getElementById('np-poly-r');
+      n.value = (numericInputs.polyN ?? "6");
+      r.value = (numericInputs.polyR ?? "");
+      n.oninput = () => { numericInputs.polyN = n.value; drawRequest(); };
+      r.oninput = () => { numericInputs.polyR = r.value; drawRequest(); };
+    }
+
+    if (currentMode === 'MOVE') {
+      npTitle.innerText = "移動：數值輸入";
+      npHint.innerText = "dX/dY(mm)。輸入後套用移動。";
+      npBody.innerHTML = `
+        <div class="np-row">
+          <div class="np-col"><label style="color:#aaa; font-family:Segoe UI;">dX</label><input id="np-move-dx" type="number" step="0.001" placeholder="mm"></div>
+          <div class="np-col"><label style="color:#aaa; font-family:Segoe UI;">dY</label><input id="np-move-dy" type="number" step="0.001" placeholder="mm"></div>
+        </div>
+      `;
+      const dx = document.getElementById('np-move-dx');
+      const dy = document.getElementById('np-move-dy');
+      dx.value = (numericInputs.moveDX ?? "");
+      dy.value = (numericInputs.moveDY ?? "");
+      dx.oninput = () => { numericInputs.moveDX = dx.value; drawRequest(); };
+      dy.oninput = () => { numericInputs.moveDY = dy.value; drawRequest(); };
+    }
+
+    if (currentMode === 'ROTATE') {
+      npTitle.innerText = "旋轉：數值輸入";
+      npHint.innerText = "角度(°)。旋轉中心 = 第一次點下的參照點。";
+      npBody.innerHTML = `
+        <div class="np-row">
+          <div class="np-col"><label style="color:#aaa; font-family:Segoe UI;">角度</label><input id="np-rot-a" type="number" step="0.01" placeholder="deg"></div>
+        </div>
+      `;
+      const a = document.getElementById('np-rot-a');
+      a.value = (numericInputs.rotA ?? "");
+      a.oninput = () => { numericInputs.rotA = a.value; drawRequest(); };
+    }
+  }
+
+  function applyNumeric() {
+    // Apply numeric action depending on mode & state
+    if (currentMode === 'LINE' && drawStep >= 1) {
+      const end = getConstrainedPos(currentWorldPos, true);
+      if (!end) return;
+      if (drawStep === 1) {
+        // commit a single segment and keep chaining
+        commitShape([tempPoints[0], end]);
+        tempPoints = [end];
+        drawStep = 1;
+        drawRequest();
+        return;
+      }
+    }
+
+    if (currentMode === 'CIRCLE' && drawStep === 1) {
+      const r = num(numericInputs.cirR);
+      if (r === null || r <= 0) return log("請輸入有效半徑 R");
+      const segs = clamp(num(numericInputs.cirSeg) ?? 64, 16, 720);
+      commitShape(generateCirclePoints(tempPoints[0], r, segs));
+      cancelOperation();
+      drawRequest();
+      return;
+    }
+
+    if (currentMode === 'RECT' && drawStep === 1) {
+      const p2 = getConstrainedPos(currentWorldPos, true);
+      if (!p2) return;
+      const p1 = tempPoints[0];
+      commitShape([{x:p1.x,y:p1.y},{x:p2.x,y:p1.y},{x:p2.x,y:p2.y},{x:p1.x,y:p2.y},{x:p1.x,y:p1.y}]);
+      cancelOperation();
+      drawRequest();
+      return;
+    }
+
+    if (currentMode === 'POLY' && drawStep === 1) {
+      const n = Math.round(num(numericInputs.polyN) ?? 6);
+      const r = num(numericInputs.polyR);
+      if (!Number.isFinite(n) || n < 3) return log("邊數 N 至少 3");
+      if (r === null || r <= 0) return log("請輸入有效半徑 R");
+      // orientation: follow current mouse angle from center
+      const c = tempPoints[0];
+      const raw = currentWorldPos;
+      let ang = Math.atan2(raw.y - c.y, raw.x - c.x);
+      if (!Number.isFinite(ang)) ang = 0;
+      commitShape(generatePolygonPoints(c, r, n, ang));
+      cancelOperation();
+      drawRequest();
+      return;
+    }
+
+    if (currentMode === 'MOVE' && drawStep === 1) {
+      const dx = num(numericInputs.moveDX);
+      const dy = num(numericInputs.moveDY);
+      if (dx === null && dy === null) return;
+      applyMove(dx ?? 0, dy ?? 0);
+      saveState();
+      setMode('SELECT');
+      log("移動完成(數值)");
+      return;
+    }
+
+    if (currentMode === 'ROTATE' && drawStep === 1) {
+      const a = num(numericInputs.rotA);
+      if (a === null) return;
+      const rad = (a * Math.PI) / 180;
+      applyRotate(rad, transformBase);
+      saveState();
+      setMode('SELECT');
+      log("旋轉完成(數值)");
+      return;
+    }
+  }
+
+  // =========================================
+  //  Mouse Handlers
+  // =========================================
+  function handleMouseDown(e) {
+    e.preventDefault();
+    if (e.button === 1) { isPanning = true; lastMouse = { x: e.clientX, y: e.clientY }; return; }
+    if (e.button !== 0) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const raw = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
+
+    let ref = null;
+    if (drawStep > 0) {
+      if (['LINE','RECT','CIRCLE','ARC','POLY'].includes(currentMode)) ref = tempPoints[0];
+      else if (['MOVE','ROTATE'].includes(currentMode)) ref = transformBase;
+    }
+
+    // Ortho on mouse step: axis lock relative to ref
+    let finalPos = raw;
+    if (ref && (isOrtho || e.shiftKey)) {
+      if (Math.abs(raw.x - ref.x) > Math.abs(raw.y - ref.y)) finalPos = { x: raw.x, y: ref.y };
+      else finalPos = { x: ref.x, y: raw.y };
+    }
+
+    // numeric constraints may override geometry preview
+    finalPos = getConstrainedPos(finalPos, false) || finalPos;
+
+    const snap = findSnapPoint(finalPos);
+    const wPos = snap ? { x: snap.x, y: snap.y } : finalPos;
+
+    if (currentMode === 'SELECT') {
+      const id = getObjectIdAt(wPos);
+      if (id) {
+        if (e.shiftKey) {
+          if (selectedIDs.has(id)) selectedIDs.delete(id); else selectedIDs.add(id);
+        } else {
+          if (!selectedIDs.has(id)) { selectedIDs.clear(); selectedIDs.add(id); }
+        }
+      } else {
+        if (!e.shiftKey) selectedIDs.clear();
+        isBoxSelecting = true; boxStart = wPos; boxEnd = wPos;
+      }
+    }
+    else if (currentMode === 'LINE') {
+      if (drawStep === 0) { tempPoints = [wPos]; drawStep = 1; }
+      else {
+        const end = getConstrainedPos(wPos, true) || wPos;
+        commitShape([tempPoints[0], end]);
+        tempPoints = [end];
+        drawStep = 1;
+      }
+    }
+    else if (currentMode === 'RECT') {
+      if (drawStep === 0) { tempPoints = [wPos]; drawStep = 1; }
+      else {
+        const p1 = tempPoints[0];
+        const p2 = getConstrainedPos(wPos, true) || wPos;
+        commitShape([{ x:p1.x, y:p1.y }, { x:p2.x, y:p1.y }, { x:p2.x, y:p2.y }, { x:p1.x, y:p2.y }, { x:p1.x, y:p1.y }]);
+        cancelOperation();
+      }
+    }
+    else if (currentMode === 'CIRCLE') {
+      if (drawStep === 0) { tempPoints = [wPos]; drawStep = 1; }
+      else {
+        const c = tempPoints[0];
+        const end = getConstrainedPos(wPos, true) || wPos;
+        const r = Math.hypot(end.x - c.x, end.y - c.y);
+        if (r > 0.01) {
+          const segs = clamp(num(numericInputs.cirSeg) ?? 64, 16, 720);
+          commitShape(generateCirclePoints(c, r, segs));
+        }
+        cancelOperation();
+      }
+    }
+    else if (currentMode === 'ARC') {
+      if (drawStep === 0) { tempPoints = [wPos]; drawStep = 1; }
+      else if (drawStep === 1) { tempPoints.push(wPos); drawStep = 2; }
+      else if (drawStep === 2) {
+        const arc = generateArcPoints(tempPoints[0], tempPoints[1], wPos);
+        if (arc) commitShape(arc);
+        cancelOperation();
+      }
+    }
+    else if (currentMode === 'POLY') {
+      if (drawStep === 0) { tempPoints = [wPos]; drawStep = 1; }
+      else {
+        const c = tempPoints[0];
+        const end = getConstrainedPos(wPos, true) || wPos;
+        const r = Math.hypot(end.x - c.x, end.y - c.y);
+        const n = Math.round(num(numericInputs.polyN) ?? 6);
+        const ang = Math.atan2(end.y - c.y, end.x - c.x);
+        if (r > 0.01 && n >= 3) commitShape(generatePolygonPoints(c, r, n, ang));
+        cancelOperation();
+      }
+    }
+    else if (currentMode === 'MOVE') {
+      if (drawStep === 0) { transformBase = wPos; drawStep = 1; log("指定目標點... (或用 N 輸入 dX/dY)"); }
+      else {
+        const dx = wPos.x - transformBase.x;
+        const dy = wPos.y - transformBase.y;
+        applyMove(dx, dy);
         saveState();
-
-        // FIX: now handleWheel exists
-        canvas.addEventListener('wheel', handleWheel, { passive: false });
-        canvas.addEventListener('mousedown', handleMouseDown);
-        canvas.addEventListener('mousemove', handleMouseMove);
-        canvas.addEventListener('mouseup', handleMouseUp);
-        canvas.addEventListener('contextmenu', (e) => { e.preventDefault(); cancelOperation(); });
-
-        window.addEventListener('keydown', (e) => {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-            if (e.key === 'Delete') deleteSelected();
-            if (e.key === 'Escape') cancelOperation();
-            if (e.key === 'Shift') { isOrtho = true; drawRequest(); }
-            if (e.ctrlKey && e.key === 'z') { e.preventDefault(); performUndo(); }
-            if (e.ctrlKey && e.key === 'y') { e.preventDefault(); performRedo(); }
-        });
-        window.addEventListener('keyup', (e) => {
-            if (e.key === 'Shift') {
-                isOrtho = document.getElementById('btn-ortho-toggle').classList.contains('on');
-                drawRequest();
-            }
-        });
-
-        updateUI();
-        toggleLaserMode();
-        updateDashboard();
-
-        requestAnimationFrame(renderLoop);
-        log("System v7.6 Ready.");
+        setMode('SELECT');
+        log("移動完成");
+      }
     }
-
-    function renderLoop() {
-        if (isRenderDirty) { renderScene(); isRenderDirty = false; }
-        requestAnimationFrame(renderLoop);
-    }
-    function drawRequest() { isRenderDirty = true; }
-
-    function resizeCanvas() {
-        // ensure non-zero
-        canvas.width = Math.max(1, container.clientWidth);
-        canvas.height = Math.max(1, container.clientHeight);
-        drawRequest();
-    }
-
-    function resetView() {
-        view.scale = 15.0; // 15 px = 1 mm
-        view.x = canvas.width / 2;
-        view.y = canvas.height / 2;
-        drawRequest();
-    }
-
-    // =========================================
-    //  Dashboard
-    // =========================================
-    function updateDashboard() {
-        const rpm = parseFloat(document.getElementById('tool-rpm').value) || 0;
-        const feed = parseFloat(document.getElementById('feed-cut').value) || 0;
-        const flutes = parseFloat(document.getElementById('tool-flutes').value) || 1;
-        const dia = parseFloat(document.getElementById('tool-dia').value) || 3.175;
-        const stepDown = Math.abs(parseFloat(document.getElementById('step-down').value) || 1);
-
-        let fz = (rpm > 0 && flutes > 0) ? (feed / (rpm * flutes)) : 0;
-        let vc = (rpm * Math.PI * dia) / 1000;
-        let mrr = (dia * stepDown * feed) / 1000;
-
-        document.getElementById('dash-fz').innerText = fz.toFixed(4);
-        document.getElementById('dash-vc').innerText = vc.toFixed(1);
-        document.getElementById('dash-mrr').innerText = mrr.toFixed(2);
-        document.getElementById('dash-rpm').innerText = rpm;
-    }
-
-    // =========================================
-    //  Mouse Handlers
-    // =========================================
-    function handleMouseDown(e) {
-        e.preventDefault();
-        if (e.button === 1) { isPanning = true; lastMouse = { x: e.clientX, y: e.clientY }; return; }
-        if (e.button !== 0) return;
-
-        const rect = canvas.getBoundingClientRect();
-        const raw = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
-
-        let ref = null;
-        if (drawStep > 0) {
-            if (['LINE', 'RECT', 'CIRCLE', 'ARC'].includes(currentMode)) ref = tempPoints[0];
-            else if (['MOVE', 'ROTATE'].includes(currentMode)) ref = transformBase;
-        }
-
-        let finalPos = raw;
-        if (ref && (isOrtho || e.shiftKey)) {
-            if (Math.abs(raw.x - ref.x) > Math.abs(raw.y - ref.y)) finalPos = { x: raw.x, y: ref.y };
-            else finalPos = { x: ref.x, y: raw.y };
-        }
-
-        const snap = findSnapPoint(finalPos);
-        const wPos = snap ? { x: snap.x, y: snap.y } : finalPos;
-
-        if (currentMode === 'SELECT') {
-            const id = getObjectIdAt(wPos);
-            if (id) {
-                if (e.shiftKey) {
-                    if (selectedIDs.has(id)) selectedIDs.delete(id); else selectedIDs.add(id);
-                } else {
-                    if (!selectedIDs.has(id)) { selectedIDs.clear(); selectedIDs.add(id); }
-                }
-            } else {
-                if (!e.shiftKey) selectedIDs.clear();
-                isBoxSelecting = true; boxStart = wPos; boxEnd = wPos;
-            }
-        }
-        else if (currentMode === 'LINE') {
-            if (drawStep === 0) { tempPoints = [wPos]; drawStep = 1; }
-            else { commitShape([tempPoints[0], wPos]); tempPoints = [wPos]; }
-        }
-        else if (currentMode === 'RECT') {
-            if (drawStep === 0) { tempPoints = [wPos]; drawStep = 1; }
-            else {
-                const p1 = tempPoints[0], p2 = wPos;
-                commitShape([{ x: p1.x, y: p1.y }, { x: p2.x, y: p1.y }, { x: p2.x, y: p2.y }, { x: p1.x, y: p2.y }, { x: p1.x, y: p1.y }]);
-                cancelOperation();
-            }
-        }
-        else if (currentMode === 'CIRCLE') {
-            if (drawStep === 0) { tempPoints = [wPos]; drawStep = 1; }
-            else {
-                const r = Math.hypot(wPos.x - tempPoints[0].x, wPos.y - tempPoints[0].y);
-                if (r > 0.01) commitShape(generateCirclePoints(tempPoints[0], r));
-                cancelOperation();
-            }
-        }
-        else if (currentMode === 'ARC') {
-            if (drawStep === 0) { tempPoints = [wPos]; drawStep = 1; }
-            else if (drawStep === 1) { tempPoints.push(wPos); drawStep = 2; }
-            else if (drawStep === 2) {
-                const arc = generateArcPoints(tempPoints[0], tempPoints[1], wPos);
-                if (arc) commitShape(arc);
-                cancelOperation();
-            }
-        }
-        else if (currentMode === 'MOVE') {
-            if (drawStep === 0) { transformBase = wPos; drawStep = 1; log("指定目標點..."); }
-            else {
-                const dx = wPos.x - transformBase.x;
-                const dy = wPos.y - transformBase.y;
-                applyMove(dx, dy);
-                saveState();
-                setMode('SELECT');
-                log("移動完成");
-            }
-        }
-        else if (currentMode === 'ROTATE') {
-            if (drawStep === 0) { transformBase = wPos; drawStep = 1; log("指定旋轉參照..."); }
-            else {
-                const angle = Math.atan2(wPos.y - transformBase.y, wPos.x - transformBase.x);
-                applyRotate(angle, transformBase);
-                saveState();
-                setMode('SELECT');
-            }
-        }
-        drawRequest();
-    }
-
-    function handleMouseMove(e) {
-        e.preventDefault();
-        if (isPanning) {
-            view.x += e.clientX - lastMouse.x;
-            view.y += e.clientY - lastMouse.y;
-            lastMouse = { x: e.clientX, y: e.clientY };
-            drawRequest(); return;
-        }
-
-        const rect = canvas.getBoundingClientRect();
-        const raw = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
-
-        let ref = null;
-        if (drawStep > 0) {
-            if (['LINE', 'RECT', 'CIRCLE', 'ARC'].includes(currentMode)) ref = tempPoints[0];
-            else if (['MOVE', 'ROTATE'].includes(currentMode)) ref = transformBase;
-        }
-
-        let finalPos = raw;
-        if (ref && (isOrtho || e.shiftKey)) {
-            if (Math.abs(raw.x - ref.x) > Math.abs(raw.y - ref.y)) finalPos = { x: raw.x, y: ref.y };
-            else finalPos = { x: ref.x, y: raw.y };
-        }
-
-        snapPoint = findSnapPoint(finalPos);
-        currentWorldPos = snapPoint || finalPos;
-
-        if (currentMode === 'SELECT' && isBoxSelecting) boxEnd = currentWorldPos;
-        document.getElementById('status-coords').innerText = `X:${currentWorldPos.x.toFixed(2)} Y:${currentWorldPos.y.toFixed(2)}`;
-
-        if (drawStep > 0) {
-            if (currentMode === 'CIRCLE') {
-                const r = Math.hypot(currentWorldPos.x - tempPoints[0].x, currentWorldPos.y - tempPoints[0].y);
-                overlay.innerText = `R: ${r.toFixed(2)}`;
-            } else if (currentMode === 'RECT') {
-                const w = currentWorldPos.x - tempPoints[0].x;
-                const h = currentWorldPos.y - tempPoints[0].y;
-                overlay.innerText = `W:${w.toFixed(2)} H:${h.toFixed(2)}`;
-            } else if (currentMode === 'MOVE') {
-                const dx = currentWorldPos.x - transformBase.x;
-                const dy = currentWorldPos.y - transformBase.y;
-                overlay.innerText = `dX:${dx.toFixed(2)} dY:${dy.toFixed(2)}`;
-            }
-        } else overlay.innerText = "";
-
-        drawRequest();
-    }
-
-    function handleMouseUp(e) {
-        if (e.button === 1) isPanning = false;
-        if (currentMode === 'SELECT' && isBoxSelecting) {
-            isBoxSelecting = false;
-            const x1 = Math.min(boxStart.x, boxEnd.x), x2 = Math.max(boxStart.x, boxEnd.x);
-            const y1 = Math.min(boxStart.y, boxEnd.y), y2 = Math.max(boxStart.y, boxEnd.y);
-            drawnObjects.forEach(obj => {
-                let hit = false;
-                for (let p of obj.points) {
-                    if (p.x >= x1 && p.x <= x2 && p.y >= y1 && p.y <= y2) { hit = true; break; }
-                }
-                if (hit) selectedIDs.add(obj.id);
-            });
-            drawRequest();
-        }
-    }
-
-    // =========================================
-    //  Shape Commit (FIX: was missing -> drawing would break later)
-    // =========================================
-    function commitShape(points) {
-        if (!points || points.length < 2) return;
-        const obj = { id: uuid(), type: 'poly', points: JSON.parse(JSON.stringify(points)) };
-        drawnObjects.push(obj);
-        selectedIDs.clear();
-        selectedIDs.add(obj.id);
+    else if (currentMode === 'ROTATE') {
+      if (drawStep === 0) { transformBase = wPos; drawStep = 1; log("指定旋轉參照... (或用 N 輸入角度)"); }
+      else {
+        const angle = Math.atan2(wPos.y - transformBase.y, wPos.x - transformBase.x);
+        applyRotate(angle, transformBase);
         saveState();
+        setMode('SELECT');
+      }
     }
 
-    // =========================================
-    //  Safe Renderer
-    // =========================================
-    function renderScene() {
-        if (Number.isNaN(view.scale) || view.scale <= 0) view.scale = 1.0;
+    updateNumericPanel();
+    drawRequest();
+  }
 
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "#111";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+  function handleMouseMove(e) {
+    e.preventDefault();
+    if (isPanning) {
+      view.x += e.clientX - lastMouse.x;
+      view.y += e.clientY - lastMouse.y;
+      lastMouse = { x: e.clientX, y: e.clientY };
+      drawRequest();
+      return;
+    }
 
-        ctx.setTransform(view.scale, 0, 0, view.scale, view.x, view.y);
+    const rect = canvas.getBoundingClientRect();
+    const raw = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
 
-        const rawGrid = parseFloat(document.getElementById('grid-size').value) || 10;
-        const gs = Math.max(1, rawGrid);
+    let ref = null;
+    if (drawStep > 0) {
+      if (['LINE','RECT','CIRCLE','ARC','POLY'].includes(currentMode)) ref = tempPoints[0];
+      else if (['MOVE','ROTATE'].includes(currentMode)) ref = transformBase;
+    }
 
-        // draw grid only if not too dense
-        if (gs * view.scale > 5) {
-            const sx = Math.floor((-view.x / view.scale) / gs) * gs;
-            const sy = Math.floor((-view.y / view.scale) / gs) * gs;
-            const ex = sx + (canvas.width / view.scale) + gs;
-            const ey = sy + (canvas.height / view.scale) + gs;
+    let finalPos = raw;
+    if (ref && (isOrtho || e.shiftKey)) {
+      if (Math.abs(raw.x - ref.x) > Math.abs(raw.y - ref.y)) finalPos = { x: raw.x, y: ref.y };
+      else finalPos = { x: ref.x, y: raw.y };
+    }
 
-            ctx.lineWidth = 1 / view.scale;
-            ctx.strokeStyle = '#333';
-            ctx.beginPath();
+    // numeric constraint overlay (preview)
+    finalPos = getConstrainedPos(finalPos, false) || finalPos;
 
-            let safeCount = 0;
-            for (let x = sx; x <= ex; x += gs) {
-                ctx.moveTo(x, sy); ctx.lineTo(x, ey);
-                if (safeCount++ > 5000) break;
-            }
-            safeCount = 0;
-            for (let y = sy; y <= ey; y += gs) {
-                ctx.moveTo(sx, y); ctx.lineTo(ex, y);
-                if (safeCount++ > 5000) break;
-            }
-            ctx.stroke();
+    snapPoint = findSnapPoint(finalPos);
+    currentWorldPos = snapPoint || finalPos;
+
+    if (currentMode === 'SELECT' && isBoxSelecting) boxEnd = currentWorldPos;
+    document.getElementById('status-coords').innerText = `X:${currentWorldPos.x.toFixed(2)} Y:${currentWorldPos.y.toFixed(2)}`;
+
+    // Overlay hint
+    if (drawStep > 0) {
+      if (currentMode === 'CIRCLE') {
+        const r = Math.hypot(currentWorldPos.x - tempPoints[0].x, currentWorldPos.y - tempPoints[0].y);
+        overlay.innerText = `R: ${r.toFixed(3)}`;
+      } else if (currentMode === 'RECT') {
+        const w = currentWorldPos.x - tempPoints[0].x;
+        const h = currentWorldPos.y - tempPoints[0].y;
+        overlay.innerText = `W:${w.toFixed(3)} H:${h.toFixed(3)}`;
+      } else if (currentMode === 'LINE') {
+        const dx = currentWorldPos.x - tempPoints[0].x;
+        const dy = currentWorldPos.y - tempPoints[0].y;
+        const L = Math.hypot(dx, dy);
+        const A = (Math.atan2(dy, dx) * 180) / Math.PI;
+        overlay.innerText = `L:${L.toFixed(3)}  A:${A.toFixed(2)}°`;
+      } else if (currentMode === 'MOVE') {
+        const dx = currentWorldPos.x - transformBase.x;
+        const dy = currentWorldPos.y - transformBase.y;
+        overlay.innerText = `dX:${dx.toFixed(3)} dY:${dy.toFixed(3)}`;
+      } else if (currentMode === 'POLY') {
+        const r = Math.hypot(currentWorldPos.x - tempPoints[0].x, currentWorldPos.y - tempPoints[0].y);
+        overlay.innerText = `R:${r.toFixed(3)}  N:${Math.round(num(numericInputs.polyN) ?? 6)}`;
+      } else {
+        overlay.innerText = "";
+      }
+    } else overlay.innerText = "";
+
+    updateNumericPanel();
+    drawRequest();
+  }
+
+  function handleMouseUp(e) {
+    if (e.button === 1) isPanning = false;
+    if (currentMode === 'SELECT' && isBoxSelecting) {
+      isBoxSelecting = false;
+      const x1 = Math.min(boxStart.x, boxEnd.x), x2 = Math.max(boxStart.x, boxEnd.x);
+      const y1 = Math.min(boxStart.y, boxEnd.y), y2 = Math.max(boxStart.y, boxEnd.y);
+      drawnObjects.forEach(obj => {
+        let hit = false;
+        for (let p of obj.points) {
+          if (p.x >= x1 && p.x <= x2 && p.y >= y1 && p.y <= y2) { hit = true; break; }
         }
+        if (hit) selectedIDs.add(obj.id);
+      });
+      drawRequest();
+    }
+  }
 
-        // axes
-        ctx.lineWidth = 2 / view.scale;
-        ctx.strokeStyle = '#666';
-        ctx.beginPath();
-        ctx.moveTo(-1000, 0); ctx.lineTo(1000, 0);
-        ctx.moveTo(0, -1000); ctx.lineTo(0, 1000);
+  // =========================================
+  //  Numeric constraint engine
+  // =========================================
+  function getConstrainedPos(pos, hardCommit) {
+    // If numeric values exist for current mode, override pos
+    // hardCommit: true when committing; false for preview
+    if (drawStep === 0) return null;
+
+    if (currentMode === 'LINE' && tempPoints.length) {
+      const L = num(numericInputs.lineL);
+      const Adeg = num(numericInputs.lineA);
+      if (L === null || L <= 0) return null;
+
+      const p0 = tempPoints[0];
+      let ang = null;
+
+      if (Adeg !== null) {
+        ang = (Adeg * Math.PI) / 180;
+      } else {
+        // use mouse direction
+        const dx = pos.x - p0.x;
+        const dy = pos.y - p0.y;
+        ang = Math.atan2(dy, dx);
+        if (!Number.isFinite(ang)) ang = 0;
+      }
+
+      let x = p0.x + Math.cos(ang) * L;
+      let y = p0.y + Math.sin(ang) * L;
+
+      // Ortho can quantize angle if toggle is on (like a real CAD "angle snap lite")
+      if (isOrtho) {
+        const step = Math.PI / 12; // 15°
+        const q = Math.round(ang / step) * step;
+        x = p0.x + Math.cos(q) * L;
+        y = p0.y + Math.sin(q) * L;
+      }
+      return { x, y };
+    }
+
+    if (currentMode === 'CIRCLE' && tempPoints.length) {
+      const R = num(numericInputs.cirR);
+      if (R === null || R <= 0) return null;
+      const c = tempPoints[0];
+      // keep angle from mouse, but clamp radius
+      const dx = pos.x - c.x;
+      const dy = pos.y - c.y;
+      let ang = Math.atan2(dy, dx);
+      if (!Number.isFinite(ang)) ang = 0;
+      return { x: c.x + Math.cos(ang) * R, y: c.y + Math.sin(ang) * R };
+    }
+
+    if (currentMode === 'RECT' && tempPoints.length) {
+      const W = num(numericInputs.rectW);
+      const H = num(numericInputs.rectH);
+      if ((W === null || W === 0) && (H === null || H === 0)) return null;
+
+      const p1 = tempPoints[0];
+      const dx = pos.x - p1.x;
+      const dy = pos.y - p1.y;
+
+      const sx = (dx >= 0) ? 1 : -1;
+      const sy = (dy >= 0) ? 1 : -1;
+
+      const w = (W !== null) ? Math.abs(W) : Math.abs(dx);
+      const h = (H !== null) ? Math.abs(H) : Math.abs(dy);
+
+      return { x: p1.x + sx * w, y: p1.y + sy * h };
+    }
+
+    if (currentMode === 'POLY' && tempPoints.length) {
+      const R = num(numericInputs.polyR);
+      if (R === null || R <= 0) return null;
+      const c = tempPoints[0];
+      const dx = pos.x - c.x;
+      const dy = pos.y - c.y;
+      let ang = Math.atan2(dy, dx);
+      if (!Number.isFinite(ang)) ang = 0;
+      return { x: c.x + Math.cos(ang) * R, y: c.y + Math.sin(ang) * R };
+    }
+
+    // MOVE / ROTATE numeric apply happens in applyNumeric(), not here.
+    return null;
+  }
+
+  // =========================================
+  //  Shape Commit
+  // =========================================
+  function commitShape(points) {
+    if (!points || points.length < 2) return;
+    const obj = { id: uuid(), type: 'poly', points: JSON.parse(JSON.stringify(points)) };
+    drawnObjects.push(obj);
+    selectedIDs.clear();
+    selectedIDs.add(obj.id);
+    saveState();
+  }
+
+  // =========================================
+  //  Renderer
+  // =========================================
+  function renderScene() {
+    if (Number.isNaN(view.scale) || view.scale <= 0) view.scale = 1.0;
+
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = "#111";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    ctx.setTransform(view.scale, 0, 0, view.scale, view.x, view.y);
+
+    const rawGrid = parseFloat(document.getElementById('grid-size').value) || 10;
+    const gs = Math.max(1, rawGrid);
+
+    // Always draw grid (visual), snap to grid is independent now.
+    if (gs * view.scale > 5) {
+      const sx = Math.floor((-view.x / view.scale) / gs) * gs;
+      const sy = Math.floor((-view.y / view.scale) / gs) * gs;
+      const ex = sx + (canvas.width / view.scale) + gs;
+      const ey = sy + (canvas.height / view.scale) + gs;
+
+      ctx.lineWidth = 1 / view.scale;
+      ctx.strokeStyle = '#333';
+      ctx.beginPath();
+
+      let safeCount = 0;
+      for (let x = sx; x <= ex; x += gs) { ctx.moveTo(x, sy); ctx.lineTo(x, ey); if (safeCount++ > 5000) break; }
+      safeCount = 0;
+      for (let y = sy; y <= ey; y += gs) { ctx.moveTo(sx, y); ctx.lineTo(ex, y); if (safeCount++ > 5000) break; }
+      ctx.stroke();
+    }
+
+    // axes
+    ctx.lineWidth = 2 / view.scale;
+    ctx.strokeStyle = '#666';
+    ctx.beginPath();
+    ctx.moveTo(-1000, 0); ctx.lineTo(1000, 0);
+    ctx.moveTo(0, -1000); ctx.lineTo(0, 1000);
+    ctx.stroke();
+
+    ctx.lineWidth = 1.5 / view.scale;
+
+    drawnObjects.forEach(obj => {
+      if (!obj.points || obj.points.length < 2) return;
+      let dx = 0, dy = 0, isGhost = false;
+      if (currentMode === 'MOVE' && drawStep === 1 && selectedIDs.has(obj.id)) {
+        dx = currentWorldPos.x - transformBase.x;
+        dy = currentWorldPos.y - transformBase.y;
+        isGhost = true;
+      }
+
+      ctx.beginPath();
+      ctx.moveTo(obj.points[0].x + dx, obj.points[0].y + dy);
+      for (let i = 1; i < obj.points.length; i++) ctx.lineTo(obj.points[i].x + dx, obj.points[i].y + dy);
+
+      if (isGhost) {
+        ctx.strokeStyle = 'yellow';
+        ctx.setLineDash([5 / view.scale, 5 / view.scale]);
         ctx.stroke();
+        ctx.setLineDash([]);
 
-        ctx.lineWidth = 1.5 / view.scale;
+        // original
+        ctx.beginPath();
+        ctx.moveTo(obj.points[0].x, obj.points[0].y);
+        for (let i = 1; i < obj.points.length; i++) ctx.lineTo(obj.points[i].x, obj.points[i].y);
+        ctx.strokeStyle = '#444';
+      } else if (selectedIDs.has(obj.id)) {
+        ctx.strokeStyle = '#00ffff';
+        ctx.shadowBlur = 5;
+        ctx.shadowColor = '#00ffff';
+      } else {
+        ctx.strokeStyle = '#e0e0e0';
+        ctx.shadowBlur = 0;
+      }
 
-        try {
-            drawnObjects.forEach(obj => {
-                if (!obj.points || obj.points.length < 2) return;
-                let dx = 0, dy = 0, isGhost = false;
-                if (currentMode === 'MOVE' && drawStep === 1 && selectedIDs.has(obj.id)) {
-                    dx = currentWorldPos.x - transformBase.x;
-                    dy = currentWorldPos.y - transformBase.y;
-                    isGhost = true;
-                }
+      ctx.stroke();
+      ctx.shadowBlur = 0;
 
-                ctx.beginPath();
-                ctx.moveTo(obj.points[0].x + dx, obj.points[0].y + dy);
-                for (let i = 1; i < obj.points.length; i++) ctx.lineTo(obj.points[i].x + dx, obj.points[i].y + dy);
+      // center snap indicator (when enabled)
+      if (snapOptions.center) {
+        const c = getObjectCenter(obj);
+        if (c) {
+          ctx.fillStyle = 'rgba(0,255,255,0.15)';
+          ctx.strokeStyle = 'rgba(0,255,255,0.25)';
+          ctx.lineWidth = 1 / view.scale;
+          ctx.beginPath(); ctx.arc(c.x, c.y, 3 / view.scale, 0, 6.28); ctx.fill(); ctx.stroke();
+        }
+      }
+    });
 
-                if (isGhost) {
-                    ctx.strokeStyle = 'yellow';
-                    ctx.setLineDash([5 / view.scale, 5 / view.scale]);
-                    ctx.stroke();
-                    ctx.setLineDash([]);
+    // box select
+    if (isBoxSelecting) {
+      ctx.fillStyle = "rgba(0,122,204,0.2)";
+      ctx.strokeStyle = "#007acc";
+      ctx.lineWidth = 1 / view.scale;
+      let w = boxEnd.x - boxStart.x, h = boxEnd.y - boxStart.y;
+      ctx.fillRect(boxStart.x, boxStart.y, w, h);
+      ctx.strokeRect(boxStart.x, boxStart.y, w, h);
+    }
 
-                    // original
-                    ctx.beginPath();
-                    ctx.moveTo(obj.points[0].x, obj.points[0].y);
-                    for (let i = 1; i < obj.points.length; i++) ctx.lineTo(obj.points[i].x, obj.points[i].y);
-                    ctx.strokeStyle = '#444';
-                } else if (selectedIDs.has(obj.id)) {
-                    ctx.strokeStyle = '#00ffff';
-                    ctx.shadowBlur = 5;
-                    ctx.shadowColor = '#00ffff';
-                } else {
-                    ctx.strokeStyle = '#e0e0e0';
-                    ctx.shadowBlur = 0;
-                }
+    // preview shapes
+    if (drawStep > 0) {
+      ctx.strokeStyle = '#ffcc00';
+      ctx.setLineDash([5 / view.scale, 5 / view.scale]);
+      ctx.beginPath();
 
-                ctx.stroke();
-                ctx.shadowBlur = 0;
-            });
-        } catch (e) {
-            console.error("Render Error:", e);
+      if (currentMode === 'LINE') {
+        ctx.moveTo(tempPoints[0].x, tempPoints[0].y);
+        ctx.lineTo(currentWorldPos.x, currentWorldPos.y);
+      }
+      else if (currentMode === 'RECT') {
+        let p1 = tempPoints[0], p2 = currentWorldPos;
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.lineTo(p1.x, p2.y);
+        ctx.lineTo(p1.x, p1.y);
+      }
+      else if (currentMode === 'CIRCLE') {
+        let r = Math.hypot(currentWorldPos.x - tempPoints[0].x, currentWorldPos.y - tempPoints[0].y);
+        ctx.arc(tempPoints[0].x, tempPoints[0].y, r, 0, 6.28);
+      }
+      else if (currentMode === 'ARC') {
+        if (drawStep === 1) {
+          ctx.moveTo(tempPoints[0].x, tempPoints[0].y);
+          ctx.lineTo(currentWorldPos.x, currentWorldPos.y);
+        } else if (drawStep === 2) {
+          const arc = generateArcPoints(tempPoints[0], tempPoints[1], currentWorldPos);
+          if (arc) {
+            ctx.moveTo(arc[0].x, arc[0].y);
+            for (let i = 1; i < arc.length; i++) ctx.lineTo(arc[i].x, arc[i].y);
+          }
+        }
+      }
+      else if (currentMode === 'POLY') {
+        const c = tempPoints[0];
+        const r = Math.hypot(currentWorldPos.x - c.x, currentWorldPos.y - c.y);
+        const n = Math.max(3, Math.round(num(numericInputs.polyN) ?? 6));
+        const ang = Math.atan2(currentWorldPos.y - c.y, currentWorldPos.x - c.x);
+        const pts = generatePolygonPoints(c, r, n, ang);
+        ctx.moveTo(pts[0].x, pts[0].y);
+        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      }
+      else if (currentMode === 'MOVE' && drawStep === 1) {
+        ctx.moveTo(transformBase.x, transformBase.y);
+        ctx.lineTo(currentWorldPos.x, currentWorldPos.y);
+      }
+
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // snap marker
+    if (snapPoint) {
+      ctx.strokeStyle = '#0f0';
+      ctx.lineWidth = 2 / view.scale;
+      if (snapPoint.type === 'end') {
+        ctx.strokeRect(snapPoint.x - 4 / view.scale, snapPoint.y - 4 / view.scale, 8 / view.scale, 8 / view.scale);
+      } else if (snapPoint.type === 'mid') {
+        ctx.beginPath();
+        ctx.moveTo(snapPoint.x, snapPoint.y - 5 / view.scale);
+        ctx.lineTo(snapPoint.x + 4 / view.scale, snapPoint.y + 4 / view.scale);
+        ctx.lineTo(snapPoint.x - 4 / view.scale, snapPoint.y + 4 / view.scale);
+        ctx.closePath();
+        ctx.stroke();
+      } else if (snapPoint.type === 'near') {
+        ctx.beginPath();
+        ctx.arc(snapPoint.x, snapPoint.y, 4 / view.scale, 0, 6.28);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(snapPoint.x - 6 / view.scale, snapPoint.y);
+        ctx.lineTo(snapPoint.x + 6 / view.scale, snapPoint.y);
+        ctx.stroke();
+      } else if (snapPoint.type === 'center') {
+        ctx.beginPath();
+        ctx.arc(snapPoint.x, snapPoint.y, 5 / view.scale, 0, 6.28);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(snapPoint.x - 6 / view.scale, snapPoint.y);
+        ctx.lineTo(snapPoint.x + 6 / view.scale, snapPoint.y);
+        ctx.moveTo(snapPoint.x, snapPoint.y - 6 / view.scale);
+        ctx.lineTo(snapPoint.x, snapPoint.y + 6 / view.scale);
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.arc(snapPoint.x, snapPoint.y, 4 / view.scale, 0, 6.28);
+        ctx.stroke();
+      }
+    }
+
+    // toolpaths
+    globalToolPaths.forEach(tp => {
+      if (!tp.points || tp.points.length < 2) return;
+      ctx.lineWidth = 1.5 / view.scale;
+      ctx.strokeStyle = tp.color || '#ff3333';
+      if (tp.color === '#0000ff') ctx.setLineDash([3 / view.scale, 3 / view.scale]); else ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(tp.points[0].x, tp.points[0].y);
+      for (let i = 1; i < tp.points.length; i++) ctx.lineTo(tp.points[i].x, tp.points[i].y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    });
+
+    // sim tool marker
+    if (simState.active) {
+      let pos = getSimPosition(simState.progress);
+      if (pos) {
+        let r = (simState.toolDia / 2);
+        ctx.fillStyle = "rgba(255,165,0,0.4)";
+        ctx.strokeStyle = "#ffaa00";
+        ctx.lineWidth = 2 / view.scale;
+        ctx.beginPath(); ctx.arc(pos.x, pos.y, r, 0, 6.28); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(pos.x - r, pos.y); ctx.lineTo(pos.x + r, pos.y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(pos.x, pos.y - r); ctx.lineTo(pos.x, pos.y + r); ctx.stroke();
+      }
+    }
+  }
+
+  // =========================================
+  //  Geometry & Utils
+  // =========================================
+  function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+  function near(a,b,tol){ return dist(a,b) <= tol; }
+
+  function ptSegClosest(p, v, w) {
+    const l2 = (w.x - v.x) ** 2 + (w.y - v.y) ** 2;
+    if (l2 === 0) return { x: v.x, y: v.y, t: 0 };
+    let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+    t = Math.max(0, Math.min(1, t));
+    return { x: v.x + t * (w.x - v.x), y: v.y + t * (w.y - v.y), t };
+  }
+
+  function getObjectCenter(obj) {
+    // "Center" snap for CAM friendliness: use bbox center (stable, not centroid drift).
+    if (!obj || !obj.points || obj.points.length < 2) return null;
+    let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+    obj.points.forEach(p => {
+      if (p.x < x1) x1 = p.x;
+      if (p.x > x2) x2 = p.x;
+      if (p.y < y1) y1 = p.y;
+      if (p.y > y2) y2 = p.y;
+    });
+    if (!Number.isFinite(x1)) return null;
+    return { x: (x1 + x2) / 2, y: (y1 + y2) / 2 };
+  }
+
+  function findSnapPoint(target) {
+    const minD = SNAP_DIST_PX / view.scale;
+    let closest = null; let minDist = minD;
+
+    // Origin
+    if (snapOptions.origin) {
+      const d0 = Math.hypot(target.x, target.y);
+      if (d0 < minDist) { minDist = d0; closest = { x:0, y:0, type:'origin' }; }
+    }
+
+    // Entities
+    for (let obj of drawnObjects) {
+      if (!obj.points || obj.points.length < 2) continue;
+
+      // Center
+      if (snapOptions.center) {
+        const c = getObjectCenter(obj);
+        if (c) {
+          const dc = Math.hypot(target.x - c.x, target.y - c.y);
+          if (dc < minDist) { minDist = dc; closest = { x:c.x, y:c.y, type:'center' }; }
+        }
+      }
+
+      for (let i = 0; i < obj.points.length - 1; i++) {
+        const p1 = obj.points[i], p2 = obj.points[i + 1];
+
+        // Endpoints
+        if (snapOptions.end) {
+          let d1 = Math.hypot(target.x - p1.x, target.y - p1.y);
+          if (d1 < minDist) { minDist = d1; closest = { x:p1.x, y:p1.y, type:'end' }; }
+          let d2 = Math.hypot(target.x - p2.x, target.y - p2.y);
+          if (d2 < minDist) { minDist = d2; closest = { x:p2.x, y:p2.y, type:'end' }; }
         }
 
-        if (isBoxSelecting) {
-            ctx.fillStyle = "rgba(0,122,204,0.2)";
-            ctx.strokeStyle = "#007acc";
-            ctx.lineWidth = 1 / view.scale;
-            let w = boxEnd.x - boxStart.x, h = boxEnd.y - boxStart.y;
-            ctx.fillRect(boxStart.x, boxStart.y, w, h);
-            ctx.strokeRect(boxStart.x, boxStart.y, w, h);
+        // Midpoints
+        if (snapOptions.mid) {
+          let mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2;
+          let dm = Math.hypot(target.x - mx, target.y - my);
+          if (dm < minDist) { minDist = dm; closest = { x:mx, y:my, type:'mid' }; }
         }
 
-        if (drawStep > 0) {
-            ctx.strokeStyle = '#ffcc00';
-            ctx.setLineDash([5 / view.scale, 5 / view.scale]);
-            ctx.beginPath();
-            if (currentMode === 'LINE') {
-                ctx.moveTo(tempPoints[0].x, tempPoints[0].y);
-                ctx.lineTo(currentWorldPos.x, currentWorldPos.y);
-            }
-            else if (currentMode === 'RECT') {
-                let p1 = tempPoints[0], p2 = currentWorldPos;
-                ctx.moveTo(p1.x, p1.y);
-                ctx.lineTo(p2.x, p1.y);
-                ctx.lineTo(p2.x, p2.y);
-                ctx.lineTo(p1.x, p2.y);
-                ctx.lineTo(p1.x, p1.y);
-            }
-            else if (currentMode === 'CIRCLE') {
-                let r = Math.hypot(currentWorldPos.x - tempPoints[0].x, currentWorldPos.y - tempPoints[0].y);
-                ctx.arc(tempPoints[0].x, tempPoints[0].y, r, 0, 6.28);
-            }
-            else if (currentMode === 'ARC') {
-                if (drawStep === 1) {
-                    ctx.moveTo(tempPoints[0].x, tempPoints[0].y);
-                    ctx.lineTo(currentWorldPos.x, currentWorldPos.y);
-                } else if (drawStep === 2) {
-                    const arc = generateArcPoints(tempPoints[0], tempPoints[1], currentWorldPos);
-                    if (arc) {
-                        ctx.moveTo(arc[0].x, arc[0].y);
-                        for (let i = 1; i < arc.length; i++) ctx.lineTo(arc[i].x, arc[i].y);
-                    }
-                }
-            }
-            else if (currentMode === 'MOVE' && drawStep === 1) {
-                ctx.moveTo(transformBase.x, transformBase.y);
-                ctx.lineTo(currentWorldPos.x, currentWorldPos.y);
-            }
-            ctx.stroke();
-            ctx.setLineDash([]);
+        // Nearest point on segment (projection)
+        if (snapOptions.near) {
+          const cp = ptSegClosest(target, p1, p2);
+          const dn = Math.hypot(target.x - cp.x, target.y - cp.y);
+          if (dn < minDist) { minDist = dn; closest = { x:cp.x, y:cp.y, type:'near' }; }
         }
+      }
+    }
 
-        if (snapPoint) {
-            ctx.strokeStyle = '#0f0';
-            ctx.lineWidth = 2 / view.scale;
-            if (snapPoint.type === 'end') ctx.strokeRect(snapPoint.x - 4 / view.scale, snapPoint.y - 4 / view.scale, 8 / view.scale, 8 / view.scale);
-            else if (snapPoint.type === 'mid') {
-                ctx.beginPath();
-                ctx.moveTo(snapPoint.x, snapPoint.y - 5 / view.scale);
-                ctx.lineTo(snapPoint.x + 4 / view.scale, snapPoint.y + 4 / view.scale);
-                ctx.lineTo(snapPoint.x - 4 / view.scale, snapPoint.y + 4 / view.scale);
-                ctx.closePath();
-                ctx.stroke();
-            }
-            else {
-                ctx.beginPath();
-                ctx.arc(snapPoint.x, snapPoint.y, 4 / view.scale, 0, 6.28);
-                ctx.stroke();
-            }
+    // Grid (separate)
+    if (!closest && snapOptions.grid) {
+      const gs = Math.max(1, parseFloat(document.getElementById('grid-size').value) || 10);
+      const gx = Math.round(target.x / gs) * gs;
+      const gy = Math.round(target.y / gs) * gs;
+      if (Math.hypot(target.x - gx, target.y - gy) < minD * 1.5) return { x:gx, y:gy, type:'grid' };
+    }
+
+    return closest;
+  }
+
+  function applyMove(dx, dy) {
+    drawnObjects.forEach(o => {
+      if (selectedIDs.has(o.id)) o.points = o.points.map(p => ({ x: p.x + dx, y: p.y + dy }));
+    });
+  }
+
+  function applyRotate(rad, c) {
+    // If ortho toggle on: snap rotation to 15°
+    if (isOrtho) rad = Math.round(rad / (Math.PI / 12)) * (Math.PI / 12);
+    const cos = Math.cos(rad), sin = Math.sin(rad);
+    drawnObjects.forEach(o => {
+      if (selectedIDs.has(o.id)) o.points = o.points.map(p => {
+        const dx = p.x - c.x, dy = p.y - c.y;
+        return { x: c.x + dx * cos - dy * sin, y: c.y + dx * sin + dy * cos };
+      });
+    });
+  }
+
+  function generateCirclePoints(c, r, segs = 64) {
+    const pts = [];
+    for (let i = 0; i <= segs; i++) {
+      const t = (i / segs) * Math.PI * 2;
+      pts.push({ x: c.x + Math.cos(t) * r, y: c.y + Math.sin(t) * r });
+    }
+    return pts;
+  }
+
+  function generatePolygonPoints(c, r, n, rot = 0) {
+    const pts = [];
+    const step = (Math.PI * 2) / n;
+    for (let i = 0; i <= n; i++) {
+      const t = rot + i * step;
+      pts.push({ x: c.x + Math.cos(t) * r, y: c.y + Math.sin(t) * r });
+    }
+    return pts;
+  }
+
+  function generateArcPoints(p1, p2, p3) {
+    const x1=p1.x,y1=p1.y,x2=p2.x,y2=p2.y,x3=p3.x,y3=p3.y;
+    const D = 2*(x1*(y2-y3)+x2*(y3-y1)+x3*(y1-y2));
+    if (Math.abs(D) < 0.001) return [p1, p3];
+
+    const cx = ((x1**2+y1**2)*(y2-y3)+(x2**2+y2**2)*(y3-y1)+(x3**2+y3**2)*(y1-y2))/D;
+    const cy = ((x1**2+y1**2)*(x3-x2)+(x2**2+y2**2)*(x1-x3)+(x3**2+y3**2)*(x2-x1))/D;
+
+    let a1 = Math.atan2(y1-cy, x1-cx);
+    let a3 = Math.atan2(y3-cy, x3-cx);
+    const cp = (x2-x1)*(y3-y1) - (y2-y1)*(x3-x1);
+
+    let start=a1, end=a3;
+    if (cp > 0) { if (end <= start) end += Math.PI*2; }
+    else { if (end >= start) end -= Math.PI*2; }
+
+    const pts = [];
+    const segs = 64;
+    for (let i=0;i<=segs;i++){
+      let t = start + (end-start)*(i/segs);
+      pts.push({ x: cx + Math.cos(t)*Math.hypot(x1-cx,y1-cy), y: cy + Math.sin(t)*Math.hypot(x1-cx,y1-cy) });
+    }
+    return pts;
+  }
+
+  // =========================================
+  //  Modes & Ops
+  // =========================================
+  function setMode(mode) {
+    if ((mode === 'MOVE' || mode === 'ROTATE') && selectedIDs.size === 0) return log("請先選取!");
+    currentMode = mode;
+    cancelOperation();
+
+    document.getElementById('status-mode').innerText = `模式: ${mode}`;
+
+    document.querySelectorAll('.toolbar-btn').forEach(b => b.classList.remove('active'));
+    const map = { 'SELECT':'btn-select','MOVE':'btn-move','ROTATE':'btn-rotate','LINE':'btn-line','RECT':'btn-rect','CIRCLE':'btn-circle','ARC':'btn-arc','POLY':'btn-poly' };
+    if (map[mode]) document.getElementById(map[mode]).classList.add('active');
+
+    if (['LINE','RECT','CIRCLE','ARC','POLY'].includes(mode)) selectedIDs.clear();
+
+    updateNumericPanel();
+    drawRequest();
+  }
+
+  function cancelOperation() {
+    drawStep = 0;
+    tempPoints = [];
+    isBoxSelecting = false;
+    overlay.innerText = "";
+    updateNumericPanel();
+    drawRequest();
+  }
+
+  function deleteSelected() {
+    if (!selectedIDs.size) return;
+    drawnObjects = drawnObjects.filter(o => !selectedIDs.has(o.id));
+    selectedIDs.clear();
+    saveState();
+    drawRequest();
+    log("已刪除");
+  }
+
+  function clearAll() {
+    if (confirm("清空?")) {
+      drawnObjects = [];
+      operations = [];
+      globalToolPaths = [];
+      selectedIDs.clear();
+      saveState();
+      renderOpList();
+      drawRequest();
+      log("已清空");
+    }
+  }
+
+  function toggleOrtho() {
+    isOrtho = !isOrtho;
+    document.getElementById('btn-ortho-toggle').classList.toggle('on', isOrtho);
+    log("Ortho: " + isOrtho);
+    drawRequest();
+  }
+
+  function toggleLaserMode() {
+    const isL = document.getElementById('chk-laser-mode').checked;
+    document.getElementById('laser-params').classList.toggle('hidden', !isL);
+    document.getElementById('feed-plunge').disabled = isL;
+    document.getElementById('cut-z').disabled = isL;
+    document.getElementById('step-down').disabled = isL;
+    document.getElementById('safe-z').disabled = isL;
+  }
+
+  function clearToolPaths() {
+    globalToolPaths = [];
+    document.getElementById('gcode-output').value = "";
+    if (simState.active) stopSim();
+    drawRequest();
+    log("Paths Cleared");
+  }
+
+  function updateUI() {
+    const m = document.getElementById('op-mode').value;
+    document.getElementById('stepover-container').classList.toggle('hidden', m !== 'pocket');
+  }
+
+  function getObjectIdAt(pos) {
+    let min = 5 / view.scale, id = null;
+    drawnObjects.forEach(o => {
+      for (let i = 0; i < o.points.length - 1; i++) {
+        const d = ptSegDist(pos, o.points[i], o.points[i + 1]);
+        if (d < min) { min = d; id = o.id; }
+      }
+    });
+    return id;
+  }
+
+  function ptSegDist(p, v, w) {
+    let l2 = (w.x - v.x) ** 2 + (w.y - v.y) ** 2;
+    if (l2 === 0) return Math.hypot(p.x - v.x, p.y - v.y);
+    let t = Math.max(0, Math.min(1, ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2));
+    return Math.hypot(p.x - (v.x + t * (w.x - v.x)), p.y - (v.y + t * (w.y - v.y)));
+  }
+
+  function saveState() {
+    if (historyStep < historyStack.length - 1) historyStack = historyStack.slice(0, historyStep + 1);
+    historyStack.push(JSON.parse(JSON.stringify(drawnObjects)));
+    historyStep++;
+  }
+  function performUndo() { if (historyStep > 0) { historyStep--; drawnObjects = JSON.parse(JSON.stringify(historyStack[historyStep])); selectedIDs.clear(); drawRequest(); log("Undo"); } }
+  function performRedo() { if (historyStep < historyStack.length - 1) { historyStep++; drawnObjects = JSON.parse(JSON.stringify(historyStack[historyStep])); selectedIDs.clear(); drawRequest(); log("Redo"); } }
+
+  // =========================================
+  //  CAM helpers
+  // =========================================
+  function mergePolylines(geoObjs) {
+    const tol = MERGE_TOLERANCE;
+    let chains = geoObjs.map(o => JSON.parse(JSON.stringify(o.points))).filter(p => p && p.length >= 2);
+    chains = chains.map(pts => pts.filter((p, i) => i === 0 || !near(p, pts[i - 1], 1e-9)));
+
+    let changed = true;
+    while (changed) {
+      changed = false;
+      outer:
+      for (let i = 0; i < chains.length; i++) {
+        for (let j = i + 1; j < chains.length; j++) {
+          const A = chains[i], B = chains[j];
+          const A0 = A[0], A1 = A[A.length - 1];
+          const B0 = B[0], B1 = B[B.length - 1];
+
+          if (near(A1, B0, tol)) { chains[i] = A.concat(B.slice(1)); chains.splice(j, 1); changed = true; break outer; }
+          if (near(A1, B1, tol)) { chains[i] = A.concat(B.slice(0, -1).reverse()); chains.splice(j, 1); changed = true; break outer; }
+          if (near(A0, B1, tol)) { chains[i] = B.concat(A.slice(1)); chains.splice(j, 1); changed = true; break outer; }
+          if (near(A0, B0, tol)) { chains[i] = B.reverse().concat(A.slice(1)); chains.splice(j, 1); changed = true; break outer; }
         }
+      }
+    }
+    return chains;
+  }
 
-        globalToolPaths.forEach(tp => {
-            if (!tp.points || tp.points.length < 2) return;
-            ctx.lineWidth = 1.5 / view.scale;
-            ctx.strokeStyle = tp.color || '#ff3333';
-            if (tp.color === '#0000ff') ctx.setLineDash([3 / view.scale, 3 / view.scale]); else ctx.setLineDash([]);
-            ctx.beginPath();
-            ctx.moveTo(tp.points[0].x, tp.points[0].y);
-            for (let i = 1; i < tp.points.length; i++) ctx.lineTo(tp.points[i].x, tp.points[i].y);
-            ctx.stroke();
-            ctx.setLineDash([]);
+  function getSignedArea(points) {
+    let a = 0;
+    for (let i = 0; i < points.length; i++) {
+      let j = (i + 1) % points.length;
+      a += points[i].x * points[j].y;
+      a -= points[i].y * points[j].x;
+    }
+    return a / 2.0;
+  }
+
+  function calculateOffsetPath(chain, radius, side) {
+    if (!chain || chain.length < 2) return null;
+    const closed = near(chain[0], chain[chain.length - 1], 1e-9);
+    const pts = closed ? chain.slice(0, -1) : chain.slice();
+    const area = closed ? getSignedArea(chain) : 0;
+
+    const sideSign = (side === 'left') ? 1 : (side === 'right') ? -1 : 0;
+    if (sideSign === 0) return JSON.parse(JSON.stringify(chain));
+
+    function unitNormal(p1, p2) {
+      const dx = p2.x - p1.x, dy = p2.y - p1.y;
+      const len = Math.hypot(dx, dy) || 1e-9;
+      return { x: -dy / len, y: dx / len };
+    }
+
+    const normals = [];
+    for (let i = 0; i < pts.length - 1; i++) normals.push(unitNormal(pts[i], pts[i + 1]));
+    if (closed) normals.push(unitNormal(pts[pts.length - 1], pts[0]));
+
+    const out = [];
+    for (let i = 0; i < pts.length; i++) {
+      const n1 = normals[(i - 1 + normals.length) % normals.length];
+      const n2 = normals[i % normals.length];
+      let nx = n1.x + n2.x, ny = n1.y + n2.y;
+      const nl = Math.hypot(nx, ny) || 1e-9;
+      nx /= nl; ny /= nl;
+
+      const windingSign = (closed && area < 0) ? -1 : 1;
+      out.push({ x: pts[i].x + nx * radius * sideSign * windingSign, y: pts[i].y + ny * radius * sideSign * windingSign });
+    }
+    if (closed) out.push({ x: out[0].x, y: out[0].y });
+    return out;
+  }
+
+  function calculatePocketPath(wall, step) {
+    if (!wall || wall.length < 4) return [];
+    const loops = [];
+    let cur = JSON.parse(JSON.stringify(wall));
+
+    for (let iter = 0; iter < 200; iter++) {
+      const left = calculateOffsetPath(cur, step, 'left');
+      const right = calculateOffsetPath(cur, step, 'right');
+      if (!left || !right) break;
+
+      const aCur = Math.abs(getSignedArea(cur));
+      const aL = Math.abs(getSignedArea(left));
+      const aR = Math.abs(getSignedArea(right));
+
+      let next = null;
+      if (aL < aCur && aL <= aR) next = left;
+      else if (aR < aCur && aR < aL) next = right;
+      else break;
+
+      if (Math.abs(getSignedArea(next)) < 1e-3) break;
+      loops.push(next);
+      cur = next;
+    }
+
+    if (!loops.length) return [];
+    const path = [];
+    path.push(...loops[0]);
+    for (let i = 1; i < loops.length; i++) {
+      const nextStart = loops[i][0];
+      path.push({ x: nextStart.x, y: nextStart.y });
+      path.push(...loops[i]);
+    }
+    return path;
+  }
+
+  // =========================================
+  //  SVG I/O
+  // =========================================
+  function importSVG(i) {
+    const f = i.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = e => {
+      try {
+        const p = new DOMParser().parseFromString(e.target.result, "image/svg+xml");
+        const ps = p.querySelectorAll('path,polyline,line,rect,circle,ellipse,polygon');
+        let n = [];
+        const t = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        t.style.visibility = 'hidden';
+        document.body.appendChild(t);
+
+        ps.forEach(el => {
+          const c = el.cloneNode(true);
+          t.appendChild(c);
+
+          if (typeof c.getTotalLength !== 'function') return;
+          const l = c.getTotalLength();
+          const s = Math.max(2, Math.ceil(l));
+          let pts = [];
+          for (let k = 0; k <= s; k++) {
+            const pt = c.getPointAtLength(l * (k / s));
+            pts.push({ x: pt.x, y: pt.y });
+          }
+          if (pts.length > 1) n.push({ id: uuid(), type: 'poly', points: pts });
         });
 
-        if (simState.active) {
-            let pos = getSimPosition(simState.progress);
-            if (pos) {
-                let r = (simState.toolDia / 2);
-                ctx.fillStyle = "rgba(255,165,0,0.4)";
-                ctx.strokeStyle = "#ffaa00";
-                ctx.lineWidth = 2 / view.scale;
-                ctx.beginPath(); ctx.arc(pos.x, pos.y, r, 0, 6.28); ctx.fill(); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(pos.x - r, pos.y); ctx.lineTo(pos.x + r, pos.y); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(pos.x, pos.y - r); ctx.lineTo(pos.x, pos.y + r); ctx.stroke();
+        document.body.removeChild(t);
+        if (n.length) {
+          drawnObjects = drawnObjects.concat(n);
+          saveState();
+          drawRequest();
+          log("Imported SVG.");
+        }
+      } catch (err) {
+        console.error(err);
+        log("SVG Error");
+      }
+    };
+    r.readAsText(f);
+    i.value = '';
+  }
+
+  function exportSVG() {
+    if (drawnObjects.length === 0) return;
+    let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+    drawnObjects.forEach(o => o.points.forEach(p => {
+      if (p.x < x1) x1 = p.x;
+      if (p.x > x2) x2 = p.x;
+      if (p.y < y1) y1 = p.y;
+      if (p.y > y2) y2 = p.y;
+    }));
+    x1 -= 10; y1 -= 10; x2 += 10; y2 += 10;
+
+    let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x1} ${y1} ${x2-x1} ${y2-y1}"><g fill="none" stroke="black">`;
+    drawnObjects.forEach(o => s += `\n<polyline points="${o.points.map(p => `${p.x},${p.y}`).join(' ')}" />`);
+    s += '</g></svg>';
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([s], { type: "image/svg+xml" }));
+    a.download = "drawing.svg";
+    a.click();
+  }
+
+  // =========================================
+  //  DXF I/O (ASCII, minimal but reliable for common entities)
+  // =========================================
+  function exportDXF() {
+    if (!drawnObjects.length) return log("沒有圖形可匯出");
+    // R12-ish with ENTITIES; export polylines as LWPOLYLINE
+    let d = [];
+    const push = (code, val) => { d.push(String(code)); d.push(String(val)); };
+
+    push(0, "SECTION"); push(2, "HEADER");
+    push(9, "$INSUNITS"); push(70, 4); // mm
+    push(0, "ENDSEC");
+
+    push(0, "SECTION"); push(2, "TABLES");
+    push(0, "ENDSEC");
+
+    push(0, "SECTION"); push(2, "ENTITIES");
+
+    drawnObjects.forEach((o, idx) => {
+      const pts = o.points || [];
+      if (pts.length < 2) return;
+
+      const closed = near(pts[0], pts[pts.length - 1], 1e-9);
+      const core = closed ? pts.slice(0, -1) : pts.slice();
+
+      push(0, "LWPOLYLINE");
+      push(8, "0"); // layer
+      push(90, core.length);
+      push(70, closed ? 1 : 0);
+      core.forEach(p => { push(10, p.x.toFixed(6)); push(20, p.y.toFixed(6)); });
+    });
+
+    push(0, "ENDSEC");
+    push(0, "EOF");
+
+    const blob = new Blob([d.join("\n")], { type: "application/dxf" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "drawing.dxf";
+    a.click();
+    log("已匯出 DXF");
+  }
+
+  function importDXF(input) {
+    const f = input.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = (e) => {
+      try {
+        const text = e.target.result;
+        const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+        // pairs: code/value
+        let i = 0;
+        let inEntities = false;
+        let ents = [];
+        let cur = null;
+
+        function flushEntity() {
+          if (!cur) return;
+          ents.push(cur);
+          cur = null;
+        }
+
+        function newEntity(type) { cur = { type, data: {} }; }
+
+        while (i < lines.length - 1) {
+          const code = lines[i++].trim();
+          const val = lines[i++];
+
+          if (code === "0") {
+            const v = val.trim();
+            if (v === "SECTION") { /* no-op */ }
+            else if (v === "ENDSEC") { inEntities = false; flushEntity(); }
+            else if (v === "EOF") { flushEntity(); break; }
+            else if (v === "ENTITIES") { inEntities = true; flushEntity(); }
+            else if (inEntities) {
+              // new entity begins
+              flushEntity();
+              if (["LINE","CIRCLE","ARC","LWPOLYLINE","POLYLINE"].includes(v)) newEntity(v);
+              else cur = null; // ignore others
             }
-        }
-    }
+            continue;
+          }
 
-    // =========================================
-    //  Math & Utils
-    // =========================================
-    function findSnapPoint(target) {
-        const minD = SNAP_DIST_PX / view.scale;
-        let closest = null; let minDist = minD;
+          if (!inEntities || !cur) continue;
 
-        if (Math.hypot(target.x, target.y) < minD) return { x: 0, y: 0, type: 'origin' };
+          // store relevant codes
+          const t = cur.type;
+          const data = cur.data;
 
-        for (let obj of drawnObjects) {
-            if (!obj.points) continue;
-            for (let i = 0; i < obj.points.length - 1; i++) {
-                const p1 = obj.points[i], p2 = obj.points[i + 1];
-
-                let d1 = Math.hypot(target.x - p1.x, target.y - p1.y);
-                if (d1 < minDist) { minDist = d1; closest = { x: p1.x, y: p1.y, type: 'end' }; }
-
-                let d2 = Math.hypot(target.x - p2.x, target.y - p2.y);
-                if (d2 < minDist) { minDist = d2; closest = { x: p2.x, y: p2.y, type: 'end' }; }
-
-                let mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2;
-                let dm = Math.hypot(target.x - mx, target.y - my);
-                if (dm < minDist) { minDist = dm; closest = { x: mx, y: my, type: 'mid' }; }
+          // common: layer 8 ignore
+          if (t === "LINE") {
+            if (code === "10") data.x1 = parseFloat(val);
+            if (code === "20") data.y1 = parseFloat(val);
+            if (code === "11") data.x2 = parseFloat(val);
+            if (code === "21") data.y2 = parseFloat(val);
+          }
+          if (t === "CIRCLE") {
+            if (code === "10") data.cx = parseFloat(val);
+            if (code === "20") data.cy = parseFloat(val);
+            if (code === "40") data.r = parseFloat(val);
+          }
+          if (t === "ARC") {
+            if (code === "10") data.cx = parseFloat(val);
+            if (code === "20") data.cy = parseFloat(val);
+            if (code === "40") data.r = parseFloat(val);
+            if (code === "50") data.a1 = parseFloat(val);
+            if (code === "51") data.a2 = parseFloat(val);
+          }
+          if (t === "LWPOLYLINE") {
+            if (!data.pts) data.pts = [];
+            if (code === "70") data.flags = parseInt(val, 10) || 0;
+            if (code === "10") { data._x = parseFloat(val); }
+            if (code === "20") {
+              const x = data._x;
+              const y = parseFloat(val);
+              if (Number.isFinite(x) && Number.isFinite(y)) data.pts.push({x,y});
+              data._x = null;
             }
+          }
         }
 
-        if (closest) return closest;
-
-        if (isGridSnap) {
-            const gs = Math.max(1, parseFloat(document.getElementById('grid-size').value) || 10);
-            const gx = Math.round(target.x / gs) * gs, gy = Math.round(target.y / gs) * gs;
-            if (Math.hypot(target.x - gx, target.y - gy) < minD * 1.5) return { x: gx, y: gy, type: 'grid' };
-        }
-        return null;
-    }
-
-    function applyMove(dx, dy) { drawnObjects.forEach(o => { if (selectedIDs.has(o.id)) o.points = o.points.map(p => ({ x: p.x + dx, y: p.y + dy })); }); }
-    function applyRotate(rad, c) {
-        if (isOrtho) rad = Math.round(rad / (Math.PI / 12)) * (Math.PI / 12);
-        const cos = Math.cos(rad), sin = Math.sin(rad);
-        drawnObjects.forEach(o => {
-            if (selectedIDs.has(o.id)) o.points = o.points.map(p => {
-                const dx = p.x - c.x, dy = p.y - c.y;
-                return { x: c.x + dx * cos - dy * sin, y: c.y + dx * sin + dy * cos };
-            });
+        // convert to our objects (polylines)
+        let newObjs = [];
+        ents.forEach(ent => {
+          const t = ent.type;
+          const d = ent.data || {};
+          if (t === "LINE" && [d.x1,d.y1,d.x2,d.y2].every(Number.isFinite)) {
+            newObjs.push({ id: uuid(), type:'poly', points:[{x:d.x1,y:d.y1},{x:d.x2,y:d.y2}] });
+          }
+          if (t === "CIRCLE" && [d.cx,d.cy,d.r].every(Number.isFinite) && d.r > 0) {
+            newObjs.push({ id: uuid(), type:'poly', points: generateCirclePoints({x:d.cx,y:d.cy}, d.r, 128) });
+          }
+          if (t === "ARC" && [d.cx,d.cy,d.r,d.a1,d.a2].every(Number.isFinite) && d.r > 0) {
+            const segs = 128;
+            const a1 = d.a1 * Math.PI / 180;
+            const a2 = d.a2 * Math.PI / 180;
+            // DXF arc is CCW from a1 to a2
+            let start = a1, end = a2;
+            if (end < start) end += Math.PI * 2;
+            let pts = [];
+            for (let k=0;k<=segs;k++){
+              const t = start + (end-start)*(k/segs);
+              pts.push({x: d.cx + Math.cos(t)*d.r, y: d.cy + Math.sin(t)*d.r});
+            }
+            newObjs.push({ id: uuid(), type:'poly', points: pts });
+          }
+          if (t === "LWPOLYLINE" && Array.isArray(d.pts) && d.pts.length >= 2) {
+            const closed = (d.flags & 1) === 1;
+            const pts = d.pts.map(p => ({x:p.x,y:p.y}));
+            if (closed && !near(pts[0], pts[pts.length-1], 1e-9)) pts.push({x:pts[0].x,y:pts[0].y});
+            newObjs.push({ id: uuid(), type:'poly', points: pts });
+          }
         });
-    }
 
-    function generateCirclePoints(c, r) {
-        const pts = [];
-        const segs = 64;
-        for (let i = 0; i <= segs; i++) {
-            const t = (i / segs) * Math.PI * 2;
-            pts.push({ x: c.x + Math.cos(t) * r, y: c.y + Math.sin(t) * r });
+        if (newObjs.length) {
+          drawnObjects = drawnObjects.concat(newObjs);
+          saveState();
+          drawRequest();
+          log(`Imported DXF: ${newObjs.length} entities`);
+        } else {
+          log("DXF 沒找到可用幾何(支援 LINE/CIRCLE/ARC/LWPOLYLINE)");
         }
-        return pts;
-    }
+      } catch (err) {
+        console.error(err);
+        log("DXF Error");
+      } finally {
+        input.value = '';
+      }
+    };
+    r.readAsText(f);
+  }
 
-    function generateArcPoints(p1, p2, p3) {
-        const x1 = p1.x, y1 = p1.y, x2 = p2.x, y2 = p2.y, x3 = p3.x, y3 = p3.y;
-        const D = 2 * (x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2));
-        if (Math.abs(D) < 0.001) return [p1, p3];
-
-        const cx = ((x1 ** 2 + y1 ** 2) * (y2 - y3) + (x2 ** 2 + y2 ** 2) * (y3 - y1) + (x3 ** 2 + y3 ** 2) * (y1 - y2)) / D;
-        const cy = ((x1 ** 2 + y1 ** 2) * (x3 - x2) + (x2 ** 2 + y2 ** 2) * (x1 - x3) + (x3 ** 2 + y3 ** 2) * (x2 - x1)) / D;
-        const r = Math.hypot(x1 - cx, y1 - cy);
-
-        let a1 = Math.atan2(y1 - cy, x1 - cx), a3 = Math.atan2(y3 - cy, x3 - cx);
-        const cp = (x2 - x1) * (y3 - y1) - (y2 - y1) * (x3 - x1);
-        let start = a1, end = a3;
-        if (cp > 0) { if (end <= start) end += Math.PI * 2; }
-        else { if (end >= start) end -= Math.PI * 2; }
-
-        const pts = [];
-        const segs = 32;
-        for (let i = 0; i <= segs; i++) {
-            let t = start + (end - start) * (i / segs);
-            pts.push({ x: cx + Math.cos(t) * r, y: cy + Math.sin(t) * r });
-        }
-        return pts;
-    }
-
-    // =========================================
-    //  Standard Ops (existing)
-    // =========================================
-    function setMode(mode) {
-        if ((mode === 'MOVE' || mode === 'ROTATE') && selectedIDs.size === 0) return log("請先選取!");
-        currentMode = mode; cancelOperation();
-        document.querySelectorAll('.toolbar-btn').forEach(b => b.classList.remove('active'));
-        const map = { 'SELECT': 'btn-select', 'MOVE': 'btn-move', 'ROTATE': 'btn-rotate', 'LINE': 'btn-line', 'RECT': 'btn-rect', 'CIRCLE': 'btn-circle', 'ARC': 'btn-arc' };
-        if (map[mode]) document.getElementById(map[mode]).classList.add('active');
-        if (['LINE', 'RECT', 'CIRCLE', 'ARC'].includes(mode)) selectedIDs.clear();
-        drawRequest();
-    }
-    function cancelOperation() { drawStep = 0; tempPoints = []; isBoxSelecting = false; drawRequest(); }
-    function deleteSelected() { if (!selectedIDs.size) return; drawnObjects = drawnObjects.filter(o => !selectedIDs.has(o.id)); selectedIDs.clear(); saveState(); drawRequest(); log("已刪除"); }
-    function clearAll() { if (confirm("清空?")) { drawnObjects = []; operations = []; globalToolPaths = []; selectedIDs.clear(); saveState(); renderOpList(); drawRequest(); log("已清空"); } }
-    function toggleGrid() { isGridSnap = !isGridSnap; document.getElementById('btn-grid-toggle').classList.toggle('on', isGridSnap); log("Grid: " + isGridSnap); drawRequest(); }
-    function toggleOrtho() { isOrtho = !isOrtho; document.getElementById('btn-ortho-toggle').classList.toggle('on', isOrtho); log("Ortho: " + isOrtho); }
-    function toggleLaserMode() {
-        const isL = document.getElementById('chk-laser-mode').checked;
-        document.getElementById('laser-params').classList.toggle('hidden', !isL);
-        document.getElementById('feed-plunge').disabled = isL;
-        document.getElementById('cut-z').disabled = isL;
-        document.getElementById('step-down').disabled = isL;
-        document.getElementById('safe-z').disabled = isL;
-    }
-    function clearToolPaths() { globalToolPaths = []; document.getElementById('gcode-output').value = ""; if (simState.active) stopSim(); drawRequest(); log("Paths Cleared"); }
-    function updateUI() { const m = document.getElementById('op-mode').value; document.getElementById('stepover-container').classList.toggle('hidden', m !== 'pocket'); }
-
-    function getObjectIdAt(pos) {
-        let min = 5 / view.scale, id = null;
-        drawnObjects.forEach(o => {
-            for (let i = 0; i < o.points.length - 1; i++) {
-                const d = ptSegDist(pos, o.points[i], o.points[i + 1]);
-                if (d < min) { min = d; id = o.id; }
-            }
-        });
-        return id;
-    }
-    function ptSegDist(p, v, w) {
-        let l2 = (w.x - v.x) ** 2 + (w.y - v.y) ** 2;
-        if (l2 == 0) return Math.hypot(p.x - v.x, p.y - v.y);
-        let t = Math.max(0, Math.min(1, ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2));
-        return Math.hypot(p.x - (v.x + t * (w.x - v.x)), p.y - (v.y + t * (w.y - v.y)));
-    }
-
-    function saveState() {
-        if (historyStep < historyStack.length - 1) historyStack = historyStack.slice(0, historyStep + 1);
-        historyStack.push(JSON.parse(JSON.stringify(drawnObjects)));
-        historyStep++;
-    }
-    function performUndo() { if (historyStep > 0) { historyStep--; drawnObjects = JSON.parse(JSON.stringify(historyStack[historyStep])); selectedIDs.clear(); drawRequest(); log("Undo"); } }
-    function performRedo() { if (historyStep < historyStack.length - 1) { historyStep++; drawnObjects = JSON.parse(JSON.stringify(historyStack[historyStep])); selectedIDs.clear(); drawRequest(); log("Redo"); } }
-
-    // =========================================
-    //  CAM helpers (FIX: prevent runtime crash when generating toolpaths)
-    // =========================================
-    function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
-    function near(a, b, tol) { return dist(a, b) <= tol; }
-
-    function mergePolylines(geoObjs) {
-        // geoObjs: [{points:[]}, ...] -> [points[], ...]
-        const tol = MERGE_TOLERANCE;
-        let chains = geoObjs.map(o => JSON.parse(JSON.stringify(o.points))).filter(p => p && p.length >= 2);
-
-        // normalize: remove consecutive duplicate points
-        chains = chains.map(pts => pts.filter((p, i) => i === 0 || !near(p, pts[i - 1], 1e-9)));
-
-        let changed = true;
-        while (changed) {
-            changed = false;
-            outer:
-            for (let i = 0; i < chains.length; i++) {
-                for (let j = i + 1; j < chains.length; j++) {
-                    const A = chains[i], B = chains[j];
-                    const A0 = A[0], A1 = A[A.length - 1];
-                    const B0 = B[0], B1 = B[B.length - 1];
-
-                    // A end -> B start
-                    if (near(A1, B0, tol)) {
-                        chains[i] = A.concat(B.slice(1));
-                        chains.splice(j, 1);
-                        changed = true;
-                        break outer;
-                    }
-                    // A end -> B end (reverse B)
-                    if (near(A1, B1, tol)) {
-                        chains[i] = A.concat(B.slice(0, -1).reverse());
-                        chains.splice(j, 1);
-                        changed = true;
-                        break outer;
-                    }
-                    // A start -> B end  (prepend)
-                    if (near(A0, B1, tol)) {
-                        chains[i] = B.concat(A.slice(1));
-                        chains.splice(j, 1);
-                        changed = true;
-                        break outer;
-                    }
-                    // A start -> B start (reverse B then prepend)
-                    if (near(A0, B0, tol)) {
-                        chains[i] = B.reverse().concat(A.slice(1));
-                        chains.splice(j, 1);
-                        changed = true;
-                        break outer;
-                    }
-                }
-            }
-        }
-        return chains;
-    }
-
-    function getSignedArea(points) {
-        let a = 0;
-        for (let i = 0; i < points.length; i++) {
-            let j = (i + 1) % points.length;
-            a += points[i].x * points[j].y;
-            a -= points[i].y * points[j].x;
-        }
-        return a / 2.0;
-    }
-
-    function calculateOffsetPath(chain, radius, side) {
-        // Basic polyline offset. Works best for closed loops.
-        if (!chain || chain.length < 2) return null;
-
-        // closed?
-        const closed = near(chain[0], chain[chain.length - 1], 1e-9);
-        const pts = closed ? chain.slice(0, -1) : chain.slice();
-
-        const area = closed ? getSignedArea(chain) : 0;
-        // for closed polygon: "right" means outward if CCW? depends; we'll interpret by geometry with area
-        // We'll map side to sign relative to segment left normal.
-        const sideSign = (side === 'left') ? 1 : (side === 'right') ? -1 : 0;
-        if (sideSign === 0) return JSON.parse(JSON.stringify(chain));
-
-        function unitNormal(p1, p2) {
-            const dx = p2.x - p1.x, dy = p2.y - p1.y;
-            const len = Math.hypot(dx, dy) || 1e-9;
-            // left normal
-            return { x: -dy / len, y: dx / len };
-        }
-
-        const normals = [];
-        for (let i = 0; i < pts.length - 1; i++) normals.push(unitNormal(pts[i], pts[i + 1]));
-        if (closed) normals.push(unitNormal(pts[pts.length - 1], pts[0]));
-
-        const out = [];
-        for (let i = 0; i < pts.length; i++) {
-            const n1 = normals[(i - 1 + normals.length) % normals.length];
-            const n2 = normals[i % normals.length];
-            // average normals (miter-ish)
-            let nx = n1.x + n2.x, ny = n1.y + n2.y;
-            const nl = Math.hypot(nx, ny) || 1e-9;
-            nx /= nl; ny /= nl;
-
-            // Heuristic: for closed loops, ensure "right/left" behaves consistently regardless of winding
-            // If polygon is CW (area<0), left normal points inward vs outward; flip by area sign.
-            const windingSign = (closed && area < 0) ? -1 : 1;
-
-            out.push({
-                x: pts[i].x + nx * radius * sideSign * windingSign,
-                y: pts[i].y + ny * radius * sideSign * windingSign
-            });
-        }
-
-        if (closed) out.push({ x: out[0].x, y: out[0].y });
-        return out;
-    }
-
-    function calculatePocketPath(wall, step) {
-        // Simple inward contour pocket: keep offsetting inward; connect loops by short links.
-        if (!wall || wall.length < 4) return [];
-
-        const loops = [];
-        let cur = JSON.parse(JSON.stringify(wall));
-
-        // generate inward offsets by picking the offset with smaller absolute area
-        for (let iter = 0; iter < 200; iter++) {
-            const left = calculateOffsetPath(cur, step, 'left');
-            const right = calculateOffsetPath(cur, step, 'right');
-            if (!left || !right) break;
-
-            const aCur = Math.abs(getSignedArea(cur));
-            const aL = Math.abs(getSignedArea(left));
-            const aR = Math.abs(getSignedArea(right));
-
-            // choose smaller area than current (inward)
-            let next = null;
-            if (aL < aCur && aL <= aR) next = left;
-            else if (aR < aCur && aR < aL) next = right;
-            else break;
-
-            // stop when too small / degenerates
-            if (Math.abs(getSignedArea(next)) < 1e-3) break;
-
-            loops.push(next);
-            cur = next;
-        }
-
-        if (!loops.length) return [];
-
-        // Connect loops into one continuous-ish polyline (not perfect CAM, but stable & visual)
-        const path = [];
-        path.push(...loops[0]);
-        for (let i = 1; i < loops.length; i++) {
-            const prevEnd = path[path.length - 1];
-            const nextStart = loops[i][0];
-            // add a link segment
-            path.push({ x: nextStart.x, y: nextStart.y });
-            path.push(...loops[i]);
-        }
-        return path;
-    }
-
-    // =========================================
-    //  SVG I/O (keep your original)
-    // =========================================
-    function importSVG(i) {
-        const f = i.files[0]; if (!f) return;
-        const r = new FileReader();
-        r.onload = e => {
-            try {
-                const p = new DOMParser().parseFromString(e.target.result, "image/svg+xml");
-                const ps = p.querySelectorAll('path,polyline,line,rect,circle,ellipse,polygon');
-                let n = [];
-                const t = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-                t.style.visibility = 'hidden';
-                document.body.appendChild(t);
-
-                ps.forEach(el => {
-                    const c = el.cloneNode(true);
-                    t.appendChild(c);
-
-                    if (typeof c.getTotalLength !== 'function') return;
-                    const l = c.getTotalLength();
-                    const s = Math.max(2, Math.ceil(l));
-                    let pts = [];
-                    for (let k = 0; k <= s; k++) {
-                        const pt = c.getPointAtLength(l * (k / s));
-                        pts.push({ x: pt.x, y: pt.y });
-                    }
-                    if (pts.length > 1) n.push({ id: uuid(), type: 'poly', points: pts });
-                });
-
-                document.body.removeChild(t);
-                if (n.length) {
-                    drawnObjects = drawnObjects.concat(n);
-                    saveState();
-                    drawRequest();
-                    log("Imported.");
-                }
-            } catch (err) {
-                console.error(err);
-                log("SVG Error");
-            }
-        };
-        r.readAsText(f);
-        i.value = '';
-    }
-
-    function exportSVG() {
-        if (drawnObjects.length === 0) return;
-        let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
-        drawnObjects.forEach(o => o.points.forEach(p => {
-            if (p.x < x1) x1 = p.x;
-            if (p.x > x2) x2 = p.x;
-            if (p.y < y1) y1 = p.y;
-            if (p.y > y2) y2 = p.y;
-        }));
-        x1 -= 10; y1 -= 10; x2 += 10; y2 += 10;
-
-        let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x1} ${y1} ${x2 - x1} ${y2 - y1}"><g fill="none" stroke="black">`;
-        drawnObjects.forEach(o => s += `\n<polyline points="${o.points.map(p => `${p.x},${p.y}`).join(' ')}" />`);
-        s += '</g></svg>';
-
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(new Blob([s], { type: "image/svg+xml" }));
-        a.download = "drawing.svg";
-        a.click();
-    }
-
-    // =========================================
-    //  CAM Core (keep your original but with one tiny safe fix for spindle)
-    // =========================================
-    function getParams() {
-        const val = (id, def) => {
-            const el = document.getElementById(id);
-            return el ? (el.type === 'number' ? parseFloat(el.value) : el.value) : def;
-        };
-        const chk = (id) => document.getElementById(id) ? document.getElementById(id).checked : false;
-        return {
-            isLaser: chk('chk-laser-mode'),
-            laserPower: val('laser-power', 1000),
-            feedRapid: val('feed-rapid', 2000),
-            feedPlunge: val('feed-plunge', 300),
-            feedCut: val('feed-cut', 800),
-            toolNo: val('tool-no', 1),
-            toolDia: val('tool-dia', 3.175),
-            toolFlutes: val('tool-flutes', 2),
-            toolRpm: val('tool-rpm', 12000),
-            mode: val('op-mode', 'profile'),
-            offset: val('op-offset', 'right'),
-            direction: val('op-direction', 'auto'),
-            stock: val('stock-leave', 0),
-            stepover: val('stepover-dist', 1.5),
-            safeZ: val('safe-z', 5),
-            startZ: val('start-z', 0),
-            cutZ: val('cut-z', -5),
-            stepDown: val('step-down', 2),
-            ramping: chk('chk-ramping')
-        };
-    }
+  // =========================================
+  //  CAM Core
+  // =========================================
+  function getParams() {
+    const val = (id, def) => {
+      const el = document.getElementById(id);
+      return el ? (el.type === 'number' ? parseFloat(el.value) : el.value) : def;
+    };
+    const chk = (id) => document.getElementById(id) ? document.getElementById(id).checked : false;
+    return {
+      isLaser: chk('chk-laser-mode'),
+      laserPower: val('laser-power', 1000),
+      feedRapid: val('feed-rapid', 2000),
+      feedPlunge: val('feed-plunge', 300),
+      feedCut: val('feed-cut', 800),
+      toolNo: val('tool-no', 1),
+      toolDia: val('tool-dia', 3.175),
+      toolFlutes: val('tool-flutes', 2),
+      toolRpm: val('tool-rpm', 12000),
+      mode: val('op-mode', 'profile'),
+      offset: val('op-offset', 'right'),
+      direction: val('op-direction', 'auto'),
+      stock: val('stock-leave', 0),
+      stepover: val('stepover-dist', 1.5),
+      safeZ: val('safe-z', 5),
+      startZ: val('start-z', 0),
+      cutZ: val('cut-z', -5),
+      stepDown: val('step-down', 2),
+      ramping: chk('chk-ramping')
+    };
+  }
 
   function setParams(p) {
     if(!p) return;
@@ -1189,267 +1871,265 @@
 
     toggleLaserMode();
     updateUI();
-
-    // ✅ 新增：工法切換載入參數後，立即刷新切削計算 Dashboard
     updateDashboard();
-}
+  }
 
+  function addOperation() {
+    if (!selectedIDs.size) return log("請先選取圖形!");
+    const p = getParams();
+    const inputName = document.getElementById('op-name-input').value.trim();
+    const defaultName = `${p.mode} (T${p.toolNo})`;
+    operations.push({
+      id: uuid(),
+      name: inputName || `Op ${operations.length + 1}: ${defaultName}`,
+      params: JSON.parse(JSON.stringify(p)),
+      geoIDs: Array.from(selectedIDs)
+    });
+    activeOpIndex = operations.length - 1;
+    renderOpList();
+    log("工法已新增");
+  }
 
-    function addOperation() {
-        if (!selectedIDs.size) return log("請先選取圖形!");
-        const p = getParams();
-        const inputName = document.getElementById('op-name-input').value.trim();
-        const defaultName = `${p.mode} (T${p.toolNo})`;
-        operations.push({
-            id: uuid(),
-            name: inputName || `Op ${operations.length + 1}: ${defaultName}`,
-            params: JSON.parse(JSON.stringify(p)),
-            geoIDs: Array.from(selectedIDs)
-        });
-        activeOpIndex = operations.length - 1;
-        renderOpList();
-        log("工法已新增");
+  function updateOperation() {
+    if (activeOpIndex < 0) return log("未選擇工法");
+    const p = getParams();
+    const inputName = document.getElementById('op-name-input').value.trim();
+    operations[activeOpIndex].params = JSON.parse(JSON.stringify(p));
+    operations[activeOpIndex].geoIDs = Array.from(selectedIDs);
+    if (inputName) operations[activeOpIndex].name = inputName;
+    renderOpList();
+    log("工法已更新");
+  }
+
+  function selectOp(i) {
+    activeOpIndex = i;
+    const op = operations[i];
+    setParams(op.params);
+    document.getElementById('op-name-input').value = op.name;
+    selectedIDs.clear();
+    op.geoIDs.forEach(id => { if (drawnObjects.find(o => o.id === id)) selectedIDs.add(id); });
+    renderOpList();
+    drawRequest();
+    log(`已載入: ${op.name}`);
+  }
+
+  function renderOpList() {
+    const l = document.getElementById('op-list');
+    l.innerHTML = "";
+    operations.forEach((op, i) => {
+      const li = document.createElement('li');
+      li.className = `op-item ${i === activeOpIndex ? 'active' : ''}`;
+      li.innerHTML = `<span class="op-name">${i + 1}. ${op.name}</span><span class="op-detail">Z:${op.params.cutZ}</span>`;
+      li.onclick = () => selectOp(i);
+      l.appendChild(li);
+    });
+  }
+
+  function deleteOperation() {
+    if (activeOpIndex < 0) return;
+    operations.splice(activeOpIndex, 1);
+    activeOpIndex = -1;
+    document.getElementById('op-name-input').value = "";
+    renderOpList();
+  }
+
+  function moveOp(d) {
+    if (activeOpIndex < 0) return;
+    const n = activeOpIndex + d;
+    if (n >= 0 && n < operations.length) {
+      [operations[activeOpIndex], operations[n]] = [operations[n], operations[activeOpIndex]];
+      activeOpIndex = n;
+      renderOpList();
     }
+  }
 
-    function updateOperation() {
-        if (activeOpIndex < 0) return log("未選擇工法");
-        const p = getParams();
-        const inputName = document.getElementById('op-name-input').value.trim();
-        operations[activeOpIndex].params = JSON.parse(JSON.stringify(p));
-        operations[activeOpIndex].geoIDs = Array.from(selectedIDs);
-        if (inputName) operations[activeOpIndex].name = inputName;
-        renderOpList();
-        log("工法已更新");
-    }
+  function generateAllGcode() {
+    if (operations.length === 0) return log("No Ops");
 
-    function selectOp(i) {
-        activeOpIndex = i;
-        const op = operations[i];
-        setParams(op.params);
-        document.getElementById('op-name-input').value = op.name;
-        selectedIDs.clear();
-        op.geoIDs.forEach(id => { if (drawnObjects.find(o => o.id === id)) selectedIDs.add(id); });
-        renderOpList();
-        drawRequest();
-        log(`已載入: ${op.name}`);
-    }
+    let code = document.getElementById('cfg-header').value + '\n';
+    globalToolPaths = [];
+    let lastPos = { x: 0, y: 0 };
+    let hasMoved = false;
 
-    function renderOpList() {
-        const l = document.getElementById('op-list');
-        l.innerHTML = "";
-        operations.forEach((op, i) => {
-            const li = document.createElement('li');
-            li.className = `op-item ${i === activeOpIndex ? 'active' : ''}`;
-            li.innerHTML = `<span class="op-name">${i + 1}. ${op.name}</span><span class="op-detail">Z:${op.params.cutZ}</span>`;
-            li.onclick = () => selectOp(i);
-            l.appendChild(li);
-        });
-    }
+    operations.forEach((op, i) => {
+      let geo = [];
+      op.geoIDs.forEach(id => {
+        const found = drawnObjects.find(o => o.id === id);
+        if (found) geo.push(JSON.parse(JSON.stringify(found)));
+      });
+      if (!geo.length) return;
 
-    function deleteOperation() {
-        if (activeOpIndex < 0) return;
-        operations.splice(activeOpIndex, 1);
-        activeOpIndex = -1;
-        document.getElementById('op-name-input').value = "";
-        renderOpList();
-    }
+      const p = op.params;
+      const dia = parseFloat(p.toolDia);
+      const radius = (dia / 2) + (parseFloat(p.stock) || 0);
+      const dir = p.direction;
 
-    function moveOp(d) {
-        if (activeOpIndex < 0) return;
-        const n = activeOpIndex + d;
-        if (n >= 0 && n < operations.length) {
-            [operations[activeOpIndex], operations[n]] = [operations[n], operations[activeOpIndex]];
-            activeOpIndex = n;
-            renderOpList();
-        }
-    }
-
-    function generateAllGcode() {
-        if (operations.length === 0) return log("No Ops");
-
-        let code = document.getElementById('cfg-header').value + '\n';
-        globalToolPaths = [];
-        let lastPos = { x: 0, y: 0 };
-        let hasMoved = false;
-
-        operations.forEach((op, i) => {
-            let geo = [];
-            op.geoIDs.forEach(id => {
-                const found = drawnObjects.find(o => o.id === id);
-                if (found) geo.push(JSON.parse(JSON.stringify(found)));
-            });
-            if (!geo.length) return;
-
-            const p = op.params;
-            const dia = parseFloat(p.toolDia);
-            const radius = (dia / 2) + (parseFloat(p.stock) || 0);
-            const dir = p.direction;
-
-            if (dir === 'cw' || dir === 'ccw') {
-                geo.forEach(obj => {
-                    if (obj.points.length > 2) {
-                        const isClosed = (obj.points[0].x === obj.points[obj.points.length - 1].x && obj.points[0].y === obj.points[obj.points.length - 1].y);
-                        if (isClosed) {
-                            let area = getSignedArea(obj.points);
-                            if (dir === 'cw' && area < 0) obj.points.reverse();
-                            if (dir === 'ccw' && area > 0) obj.points.reverse();
-                        }
-                    }
-                });
+      if (dir === 'cw' || dir === 'ccw') {
+        geo.forEach(obj => {
+          if (obj.points.length > 2) {
+            const isClosed = (obj.points[0].x === obj.points[obj.points.length - 1].x && obj.points[0].y === obj.points[obj.points.length - 1].y);
+            if (isClosed) {
+              let area = getSignedArea(obj.points);
+              if (dir === 'cw' && area < 0) obj.points.reverse();
+              if (dir === 'ccw' && area > 0) obj.points.reverse();
             }
-
-            let tc = document.getElementById('cfg-toolchange').value;
-
-            // SAFE FIX: 非雷射應該用 toolRpm，不要亂塞 laserPower
-            const spindleVal = p.isLaser ? (p.laserPower || 1000) : (p.toolRpm || 12000);
-
-            code += `\n(Op ${i + 1}: ${op.name})\n${tc.replace(/{tool_no}/g, p.toolNo).replace(/{spindle}/g, spindleVal)}\n`;
-
-            let chains = document.getElementById('chk-auto-merge').checked ? mergePolylines(geo) : geo.map(o => o.points);
-
-            chains.forEach(chain => {
-                let wall = (p.offset === 'none') ? chain : calculateOffsetPath(chain, radius, p.offset);
-                if (!wall || wall.length < 2) return;
-
-                let paths = [wall];
-                if (p.mode === 'pocket') {
-                    let step = Math.max(0.1, parseFloat(p.stepover) || 1.5);
-                    let pkt = calculatePocketPath(wall, step);
-                    if (pkt && pkt.length) paths.push(pkt);
-                }
-
-                const startZ = parseFloat(p.startZ),
-                    finalZ = parseFloat(p.cutZ),
-                    stepD = Math.abs(parseFloat(p.stepDown)) || 1.0,
-                    passes = p.isLaser ? 1 : Math.ceil(Math.abs(startZ - finalZ) / stepD);
-
-                paths.forEach(pts => {
-                    if (!pts || pts.length < 2) return;
-
-                    if (hasMoved) {
-                        globalToolPaths.push({ points: [{ x: lastPos.x, y: lastPos.y }, { x: pts[0].x, y: pts[0].y }], color: '#0000ff' });
-                    }
-                    lastPos = { x: pts[pts.length - 1].x, y: pts[pts.length - 1].y };
-                    hasMoved = true;
-
-                    globalToolPaths.push({ points: pts, color: '#ff3333' });
-
-                    if (p.isLaser) {
-                        code += `M5\nG0 X${pts[0].x.toFixed(3)} Y${pts[0].y.toFixed(3)}\nM3 S${p.laserPower}\n`;
-                        for (let k = 1; k < pts.length; k++) code += `G1 X${pts[k].x.toFixed(3)} Y${pts[k].y.toFixed(3)} F${p.feedCut}\n`;
-                        code += `M5\n`;
-                    } else {
-                        code += `G0 Z${p.safeZ}\nG0 X${pts[0].x.toFixed(3)} Y${pts[0].y.toFixed(3)}\n`;
-                        for (let pass = 1; pass <= passes; pass++) {
-                            let cz = startZ - (pass * stepD);
-                            if (cz < finalZ) cz = finalZ;
-
-                            if (p.ramping && pass === 1 && pts.length >= 2) {
-                                code += `G1 X${pts[1].x.toFixed(3)} Y${pts[1].y.toFixed(3)} Z${cz.toFixed(3)} F${p.feedPlunge}\n`;
-                                for (let k = 2; k < pts.length; k++) code += `G1 X${pts[k].x.toFixed(3)} Y${pts[k].y.toFixed(3)} F${p.feedCut}\n`;
-                            } else {
-                                code += `G1 Z${cz.toFixed(3)} F${p.feedPlunge}\n`;
-                                for (let k = 1; k < pts.length; k++) code += `G1 X${pts[k].x.toFixed(3)} Y${pts[k].y.toFixed(3)} F${p.feedCut}\n`;
-                            }
-                        }
-                        code += `G0 Z${p.safeZ}\n`;
-                    }
-                });
-            });
+          }
         });
+      }
 
-        code += document.getElementById('cfg-footer').value;
-        document.getElementById('gcode-output').value = code;
-        drawRequest();
-        log("G-Code Ready");
-    }
+      let tc = document.getElementById('cfg-toolchange').value;
+      const spindleVal = p.isLaser ? (p.laserPower || 1000) : (p.toolRpm || 12000);
 
-    // =========================================
-    //  Sim (keep your original)
-    // =========================================
-    function prepareSim() {
-        if (globalToolPaths.length === 0) return false;
-        let flat = [];
-        globalToolPaths.forEach(path => {
-            if (path.points.length < 2) return;
-            for (let i = 0; i < path.points.length - 1; i++) {
-                let p1 = path.points[i], p2 = path.points[i + 1];
-                let len = Math.hypot(p2.x - p1.x, p2.y - p1.y);
-                if (len > 0.0001) flat.push({ p1, p2, len, color: path.color });
+      code += `\n(Op ${i + 1}: ${op.name})\n${tc.replace(/{tool_no}/g, p.toolNo).replace(/{spindle}/g, spindleVal)}\n`;
+
+      let chains = document.getElementById('chk-auto-merge').checked ? mergePolylines(geo) : geo.map(o => o.points);
+
+      chains.forEach(chain => {
+        let wall = (p.offset === 'none') ? chain : calculateOffsetPath(chain, radius, p.offset);
+        if (!wall || wall.length < 2) return;
+
+        let paths = [wall];
+        if (p.mode === 'pocket') {
+          let step = Math.max(0.1, parseFloat(p.stepover) || 1.5);
+          let pkt = calculatePocketPath(wall, step);
+          if (pkt && pkt.length) paths.push(pkt);
+        }
+
+        const startZ = parseFloat(p.startZ),
+              finalZ = parseFloat(p.cutZ),
+              stepD = Math.abs(parseFloat(p.stepDown)) || 1.0,
+              passes = p.isLaser ? 1 : Math.ceil(Math.abs(startZ - finalZ) / stepD);
+
+        paths.forEach(pts => {
+          if (!pts || pts.length < 2) return;
+
+          if (hasMoved) globalToolPaths.push({ points: [{ x:lastPos.x, y:lastPos.y }, { x:pts[0].x, y:pts[0].y }], color:'#0000ff' });
+          lastPos = { x: pts[pts.length - 1].x, y: pts[pts.length - 1].y };
+          hasMoved = true;
+
+          globalToolPaths.push({ points: pts, color: '#ff3333' });
+
+          if (p.isLaser) {
+            code += `M5\nG0 X${pts[0].x.toFixed(3)} Y${pts[0].y.toFixed(3)}\nM3 S${p.laserPower}\n`;
+            for (let k = 1; k < pts.length; k++) code += `G1 X${pts[k].x.toFixed(3)} Y${pts[k].y.toFixed(3)} F${p.feedCut}\n`;
+            code += `M5\n`;
+          } else {
+            code += `G0 Z${p.safeZ}\nG0 X${pts[0].x.toFixed(3)} Y${pts[0].y.toFixed(3)}\n`;
+            for (let pass = 1; pass <= passes; pass++) {
+              let cz = startZ - (pass * stepD);
+              if (cz < finalZ) cz = finalZ;
+
+              if (p.ramping && pass === 1 && pts.length >= 2) {
+                code += `G1 X${pts[1].x.toFixed(3)} Y${pts[1].y.toFixed(3)} Z${cz.toFixed(3)} F${p.feedPlunge}\n`;
+                for (let k = 2; k < pts.length; k++) code += `G1 X${pts[k].x.toFixed(3)} Y${pts[k].y.toFixed(3)} F${p.feedCut}\n`;
+              } else {
+                code += `G1 Z${cz.toFixed(3)} F${p.feedPlunge}\n`;
+                for (let k = 1; k < pts.length; k++) code += `G1 X${pts[k].x.toFixed(3)} Y${pts[k].y.toFixed(3)} F${p.feedCut}\n`;
+              }
             }
+            code += `G0 Z${p.safeZ}\n`;
+          }
         });
-        if (!flat.length) return false;
-        simState.flattenedPath = flat;
-        simState.totalLen = flat.reduce((s, g) => s + g.len, 0);
-        simState.toolDia = parseFloat(document.getElementById('tool-dia').value);
-        return true;
-    }
-    function toggleSim() {
-        if (globalToolPaths.length === 0) generateAllGcode();
-        if (!simState.active) {
-            if (prepareSim()) {
-                simState.active = true; simState.paused = false;
-                if (simState.progress >= 100) simState.progress = 0;
-                document.getElementById('btn-sim-play').innerText = "⏸️";
-                simLoop();
-            } else log("No Sim Data");
-        } else {
-            simState.paused = !simState.paused;
-            document.getElementById('btn-sim-play').innerText = simState.paused ? "▶" : "⏸️";
-            if (!simState.paused) simLoop();
-        }
-    }
-    function stopSim() {
-        simState.active = false; simState.paused = false; simState.progress = 0;
-        document.getElementById('sim-progress').value = 0;
-        document.getElementById('btn-sim-play').innerText = "▶";
-        if (simState.animId) cancelAnimationFrame(simState.animId);
-        drawRequest();
-    }
-    function scrubSim() {
-        if (!simState.active) {
-            if (globalToolPaths.length === 0) generateAllGcode();
-            if (prepareSim()) simState.active = true;
-        }
-        simState.paused = true;
-        document.getElementById('btn-sim-play').innerText = "▶";
-        simState.progress = parseFloat(document.getElementById('sim-progress').value);
-        drawRequest();
-    }
-    function simLoop() {
-        if (!simState.active || simState.paused) return;
-        const sp = parseFloat(document.getElementById('sim-speed').value);
-        if (!simState.totalLen) { stopSim(); return; }
-        const step = (simState.totalLen / 1000) * sp;
-        let cur = (simState.progress / 100) * simState.totalLen + step;
-        if (cur >= simState.totalLen) {
-            cur = simState.totalLen;
-            simState.paused = true;
-            document.getElementById('btn-sim-play').innerText = "▶";
-        }
-        simState.progress = (cur / simState.totalLen) * 100;
-        document.getElementById('sim-progress').value = simState.progress;
-        drawRequest();
-        simState.animId = requestAnimationFrame(simLoop);
-    }
-    function getSimPosition(pct) {
-        if (!simState.flattenedPath.length) return null;
-        let t = (pct / 100) * simState.totalLen;
-        let r = 0;
-        for (let s of simState.flattenedPath) {
-            if (r + s.len >= t) {
-                let d = (t - r) / s.len;
-                return { x: s.p1.x + (s.p2.x - s.p1.x) * d, y: s.p1.y + (s.p2.y - s.p1.y) * d };
-            }
-            r += s.len;
-        }
-        return simState.flattenedPath[simState.flattenedPath.length - 1].p2;
-    }
+      });
+    });
 
-    // =========================================
-    //  Boot
-    // =========================================
-    init();
+    code += document.getElementById('cfg-footer').value;
+    document.getElementById('gcode-output').value = code;
+    drawRequest();
+    log("G-Code Ready");
+  }
+
+  // =========================================
+  //  Sim
+  // =========================================
+  function prepareSim() {
+    if (globalToolPaths.length === 0) return false;
+    let flat = [];
+    globalToolPaths.forEach(path => {
+      if (path.points.length < 2) return;
+      for (let i = 0; i < path.points.length - 1; i++) {
+        let p1 = path.points[i], p2 = path.points[i + 1];
+        let len = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+        if (len > 0.0001) flat.push({ p1, p2, len, color: path.color });
+      }
+    });
+    if (!flat.length) return false;
+    simState.flattenedPath = flat;
+    simState.totalLen = flat.reduce((s, g) => s + g.len, 0);
+    simState.toolDia = parseFloat(document.getElementById('tool-dia').value);
+    return true;
+  }
+
+  function toggleSim() {
+    if (globalToolPaths.length === 0) generateAllGcode();
+    if (!simState.active) {
+      if (prepareSim()) {
+        simState.active = true; simState.paused = false;
+        if (simState.progress >= 100) simState.progress = 0;
+        document.getElementById('btn-sim-play').innerText = "⏸️";
+        simLoop();
+      } else log("No Sim Data");
+    } else {
+      simState.paused = !simState.paused;
+      document.getElementById('btn-sim-play').innerText = simState.paused ? "▶" : "⏸️";
+      if (!simState.paused) simLoop();
+    }
+  }
+
+  function stopSim() {
+    simState.active = false; simState.paused = false; simState.progress = 0;
+    document.getElementById('sim-progress').value = 0;
+    document.getElementById('btn-sim-play').innerText = "▶";
+    if (simState.animId) cancelAnimationFrame(simState.animId);
+    drawRequest();
+  }
+
+  function scrubSim() {
+    if (!simState.active) {
+      if (globalToolPaths.length === 0) generateAllGcode();
+      if (prepareSim()) simState.active = true;
+    }
+    simState.paused = true;
+    document.getElementById('btn-sim-play').innerText = "▶";
+    simState.progress = parseFloat(document.getElementById('sim-progress').value);
+    drawRequest();
+  }
+
+  function simLoop() {
+    if (!simState.active || simState.paused) return;
+    const sp = parseFloat(document.getElementById('sim-speed').value);
+    if (!simState.totalLen) { stopSim(); return; }
+    const step = (simState.totalLen / 1000) * sp;
+    let cur = (simState.progress / 100) * simState.totalLen + step;
+    if (cur >= simState.totalLen) {
+      cur = simState.totalLen;
+      simState.paused = true;
+      document.getElementById('btn-sim-play').innerText = "▶";
+    }
+    simState.progress = (cur / simState.totalLen) * 100;
+    document.getElementById('sim-progress').value = simState.progress;
+    drawRequest();
+    simState.animId = requestAnimationFrame(simLoop);
+  }
+
+  function getSimPosition(pct) {
+    if (!simState.flattenedPath.length) return null;
+    let t = (pct / 100) * simState.totalLen;
+    let r = 0;
+    for (let s of simState.flattenedPath) {
+      if (r + s.len >= t) {
+        let d = (t - r) / s.len;
+        return { x: s.p1.x + (s.p2.x - s.p1.x) * d, y: s.p1.y + (s.p2.y - s.p1.y) * d };
+      }
+      r += s.len;
+    }
+    return simState.flattenedPath[simState.flattenedPath.length - 1].p2;
+  }
+
+  // =========================================
+  //  Boot
+  // =========================================
+  init();
 </script>
 </body>
 </html>
