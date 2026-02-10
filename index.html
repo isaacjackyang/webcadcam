@@ -718,7 +718,8 @@
     // numeric constraints may override geometry preview
     finalPos = getConstrainedPos(finalPos, false) || finalPos;
 
-    const snap = findSnapPoint(finalPos);
+    const shouldIgnoreSelected = drawStep > 0 && ['MOVE', 'ROTATE'].includes(currentMode);
+    const snap = findSnapPoint(finalPos, { ignoreSelected: shouldIgnoreSelected });
     const wPos = snap ? { x: snap.x, y: snap.y } : finalPos;
 
     if (currentMode === 'SELECT') {
@@ -839,7 +840,8 @@
     // numeric constraint overlay (preview)
     finalPos = getConstrainedPos(finalPos, false) || finalPos;
 
-    snapPoint = findSnapPoint(finalPos);
+    const shouldIgnoreSelected = drawStep > 0 && ['MOVE', 'ROTATE'].includes(currentMode);
+    snapPoint = findSnapPoint(finalPos, { ignoreSelected: shouldIgnoreSelected });
     currentWorldPos = snapPoint || finalPos;
 
     if (currentMode === 'SELECT' && isBoxSelecting) boxEnd = currentWorldPos;
@@ -883,11 +885,7 @@
       const x1 = Math.min(boxStart.x, boxEnd.x), x2 = Math.max(boxStart.x, boxEnd.x);
       const y1 = Math.min(boxStart.y, boxEnd.y), y2 = Math.max(boxStart.y, boxEnd.y);
       drawnObjects.forEach(obj => {
-        let hit = false;
-        for (let p of obj.points) {
-          if (p.x >= x1 && p.x <= x2 && p.y >= y1 && p.y <= y2) { hit = true; break; }
-        }
-        if (hit) selectedIDs.add(obj.id);
+        if (objectIntersectsRect(obj, x1, y1, x2, y2)) selectedIDs.add(obj.id);
       });
       drawRequest();
     }
@@ -1223,6 +1221,44 @@
     return { x: v.x + t * (w.x - v.x), y: v.y + t * (w.y - v.y), t };
   }
 
+  function pointInRect(p, x1, y1, x2, y2) {
+    return p.x >= x1 && p.x <= x2 && p.y >= y1 && p.y <= y2;
+  }
+
+  function orient(a, b, c) {
+    return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+  }
+
+  function onSeg(a, b, p) {
+    return p.x >= Math.min(a.x, b.x) - 1e-9 && p.x <= Math.max(a.x, b.x) + 1e-9 &&
+           p.y >= Math.min(a.y, b.y) - 1e-9 && p.y <= Math.max(a.y, b.y) + 1e-9;
+  }
+
+  function segIntersects(a, b, c, d) {
+    const o1 = orient(a, b, c), o2 = orient(a, b, d), o3 = orient(c, d, a), o4 = orient(c, d, b);
+    if ((o1 > 0) !== (o2 > 0) && (o3 > 0) !== (o4 > 0)) return true;
+    if (Math.abs(o1) < 1e-9 && onSeg(a, b, c)) return true;
+    if (Math.abs(o2) < 1e-9 && onSeg(a, b, d)) return true;
+    if (Math.abs(o3) < 1e-9 && onSeg(c, d, a)) return true;
+    if (Math.abs(o4) < 1e-9 && onSeg(c, d, b)) return true;
+    return false;
+  }
+
+  function segmentIntersectsRect(a, b, x1, y1, x2, y2) {
+    if (pointInRect(a, x1, y1, x2, y2) || pointInRect(b, x1, y1, x2, y2)) return true;
+    const r1 = { x: x1, y: y1 }, r2 = { x: x2, y: y1 }, r3 = { x: x2, y: y2 }, r4 = { x: x1, y: y2 };
+    return segIntersects(a, b, r1, r2) || segIntersects(a, b, r2, r3) || segIntersects(a, b, r3, r4) || segIntersects(a, b, r4, r1);
+  }
+
+  function objectIntersectsRect(obj, x1, y1, x2, y2) {
+    if (!obj || !obj.points || obj.points.length < 1) return false;
+    for (let i = 0; i < obj.points.length; i++) {
+      if (pointInRect(obj.points[i], x1, y1, x2, y2)) return true;
+      if (i > 0 && segmentIntersectsRect(obj.points[i - 1], obj.points[i], x1, y1, x2, y2)) return true;
+    }
+    return false;
+  }
+
   function getObjectCenter(obj) {
     // "Center" snap for CAM friendliness: use bbox center (stable, not centroid drift).
     if (!obj || !obj.points || obj.points.length < 2) return null;
@@ -1237,7 +1273,8 @@
     return { x: (x1 + x2) / 2, y: (y1 + y2) / 2 };
   }
 
-  function findSnapPoint(target) {
+  function findSnapPoint(target, opts = {}) {
+    const { ignoreSelected = false } = opts;
     const minD = SNAP_DIST_PX / view.scale;
     let closest = null; let minDist = minD;
 
@@ -1249,6 +1286,7 @@
 
     // Entities
     for (let obj of drawnObjects) {
+      if (ignoreSelected && selectedIDs.has(obj.id)) continue;
       if (!obj.points || obj.points.length < 2) continue;
 
       // Center
@@ -1582,6 +1620,7 @@
     r.onload = e => {
       try {
         const p = new DOMParser().parseFromString(e.target.result, "image/svg+xml");
+        if (p.querySelector('parsererror')) throw new Error("Invalid SVG");
         const ps = p.querySelectorAll('path,polyline,line,rect,circle,ellipse,polygon');
         let n = [];
         const t = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -1635,9 +1674,11 @@
     s += '</g></svg>';
 
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([s], { type: "image/svg+xml" }));
+    const url = URL.createObjectURL(new Blob([s], { type: "image/svg+xml" }));
+    a.href = url;
     a.download = "drawing.svg";
     a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
   }
 
   // =========================================
@@ -1677,9 +1718,11 @@
 
     const blob = new Blob([d.join("\n")], { type: "application/dxf" });
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
+    a.href = url;
     a.download = "drawing.dxf";
     a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
     log("已匯出 DXF");
   }
 
@@ -1692,12 +1735,22 @@
         const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
         // pairs: code/value
         let i = 0;
+        let currentSection = "";
         let inEntities = false;
         let ents = [];
         let cur = null;
 
+        function flushPolylineVertex() {
+          if (!cur || cur.type !== "POLYLINE") return;
+          const d = cur.data;
+          if (!Array.isArray(d.pts)) d.pts = [];
+          if (Number.isFinite(d._vx) && Number.isFinite(d._vy)) d.pts.push({ x: d._vx, y: d._vy });
+          d._vx = null; d._vy = null;
+        }
+
         function flushEntity() {
           if (!cur) return;
+          flushPolylineVertex();
           ents.push(cur);
           cur = null;
         }
@@ -1708,16 +1761,42 @@
           const code = lines[i++].trim();
           const val = lines[i++];
 
+          // SECTION names are carried in group code 2 right after "0\nSECTION"
+          if (code === "2" && currentSection === "") {
+            currentSection = val.trim();
+            inEntities = currentSection === "ENTITIES";
+            continue;
+          }
+
           if (code === "0") {
             const v = val.trim();
-            if (v === "SECTION") { /* no-op */ }
-            else if (v === "ENDSEC") { inEntities = false; flushEntity(); }
-            else if (v === "EOF") { flushEntity(); break; }
-            else if (v === "ENTITIES") { inEntities = true; flushEntity(); }
+            if (v === "SECTION") {
+              flushEntity();
+              currentSection = "";
+              inEntities = false;
+            }
+            else if (v === "ENDSEC") {
+              inEntities = false;
+              currentSection = "";
+              flushEntity();
+            }
+            else if (v === "EOF") {
+              flushEntity();
+              break;
+            }
             else if (inEntities) {
+              if (v === "VERTEX" && cur && cur.type === "POLYLINE") {
+                flushPolylineVertex();
+                continue;
+              }
+              if (v === "SEQEND" && cur && cur.type === "POLYLINE") {
+                flushEntity();
+                continue;
+              }
+
               // new entity begins
               flushEntity();
-              if (["LINE","CIRCLE","ARC","LWPOLYLINE","POLYLINE"].includes(v)) newEntity(v);
+              if (["LINE", "CIRCLE", "ARC", "LWPOLYLINE", "POLYLINE"].includes(v)) newEntity(v);
               else cur = null; // ignore others
             }
             continue;
@@ -1729,7 +1808,6 @@
           const t = cur.type;
           const data = cur.data;
 
-          // common: layer 8 ignore
           if (t === "LINE") {
             if (code === "10") data.x1 = parseFloat(val);
             if (code === "20") data.y1 = parseFloat(val);
@@ -1751,13 +1829,19 @@
           if (t === "LWPOLYLINE") {
             if (!data.pts) data.pts = [];
             if (code === "70") data.flags = parseInt(val, 10) || 0;
-            if (code === "10") { data._x = parseFloat(val); }
+            if (code === "10") data._x = parseFloat(val);
             if (code === "20") {
               const x = data._x;
               const y = parseFloat(val);
-              if (Number.isFinite(x) && Number.isFinite(y)) data.pts.push({x,y});
+              if (Number.isFinite(x) && Number.isFinite(y)) data.pts.push({ x, y });
               data._x = null;
             }
+          }
+          if (t === "POLYLINE") {
+            if (!data.pts) data.pts = [];
+            if (code === "70") data.flags = parseInt(val, 10) || 0;
+            if (code === "10") data._vx = parseFloat(val);
+            if (code === "20") data._vy = parseFloat(val);
           }
         }
 
@@ -1766,13 +1850,13 @@
         ents.forEach(ent => {
           const t = ent.type;
           const d = ent.data || {};
-          if (t === "LINE" && [d.x1,d.y1,d.x2,d.y2].every(Number.isFinite)) {
-            newObjs.push({ id: uuid(), type:'poly', points:[{x:d.x1,y:d.y1},{x:d.x2,y:d.y2}] });
+          if (t === "LINE" && [d.x1, d.y1, d.x2, d.y2].every(Number.isFinite)) {
+            newObjs.push({ id: uuid(), type: 'poly', points: [{ x: d.x1, y: d.y1 }, { x: d.x2, y: d.y2 }] });
           }
-          if (t === "CIRCLE" && [d.cx,d.cy,d.r].every(Number.isFinite) && d.r > 0) {
-            newObjs.push({ id: uuid(), type:'poly', points: generateCirclePoints({x:d.cx,y:d.cy}, d.r, 128) });
+          if (t === "CIRCLE" && [d.cx, d.cy, d.r].every(Number.isFinite) && d.r > 0) {
+            newObjs.push({ id: uuid(), type: 'poly', points: generateCirclePoints({ x: d.cx, y: d.cy }, d.r, 128) });
           }
-          if (t === "ARC" && [d.cx,d.cy,d.r,d.a1,d.a2].every(Number.isFinite) && d.r > 0) {
+          if (t === "ARC" && [d.cx, d.cy, d.r, d.a1, d.a2].every(Number.isFinite) && d.r > 0) {
             const segs = 128;
             const a1 = d.a1 * Math.PI / 180;
             const a2 = d.a2 * Math.PI / 180;
@@ -1780,17 +1864,17 @@
             let start = a1, end = a2;
             if (end < start) end += Math.PI * 2;
             let pts = [];
-            for (let k=0;k<=segs;k++){
-              const t = start + (end-start)*(k/segs);
-              pts.push({x: d.cx + Math.cos(t)*d.r, y: d.cy + Math.sin(t)*d.r});
+            for (let k = 0; k <= segs; k++) {
+              const t = start + (end - start) * (k / segs);
+              pts.push({ x: d.cx + Math.cos(t) * d.r, y: d.cy + Math.sin(t) * d.r });
             }
-            newObjs.push({ id: uuid(), type:'poly', points: pts });
+            newObjs.push({ id: uuid(), type: 'poly', points: pts });
           }
-          if (t === "LWPOLYLINE" && Array.isArray(d.pts) && d.pts.length >= 2) {
+          if ((t === "LWPOLYLINE" || t === "POLYLINE") && Array.isArray(d.pts) && d.pts.length >= 2) {
             const closed = (d.flags & 1) === 1;
-            const pts = d.pts.map(p => ({x:p.x,y:p.y}));
-            if (closed && !near(pts[0], pts[pts.length-1], 1e-9)) pts.push({x:pts[0].x,y:pts[0].y});
-            newObjs.push({ id: uuid(), type:'poly', points: pts });
+            const pts = d.pts.map(p => ({ x: p.x, y: p.y }));
+            if (closed && !near(pts[0], pts[pts.length - 1], 1e-9)) pts.push({ x: pts[0].x, y: pts[0].y });
+            newObjs.push({ id: uuid(), type: 'poly', points: pts });
           }
         });
 
@@ -1800,7 +1884,7 @@
           drawRequest();
           log(`Imported DXF: ${newObjs.length} entities`);
         } else {
-          log("DXF 沒找到可用幾何(支援 LINE/CIRCLE/ARC/LWPOLYLINE)");
+          log("DXF 沒找到可用幾何(支援 LINE/CIRCLE/ARC/LWPOLYLINE/POLYLINE)");
         }
       } catch (err) {
         console.error(err);
@@ -1811,6 +1895,7 @@
     };
     r.readAsText(f);
   }
+
 
   // =========================================
   //  CAM Core
